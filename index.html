@@ -14,6 +14,11 @@
     --light:#F5FAFF;
 }
 
+/* Membuat efek gulir halaman menjadi halus saat tombol diklik */
+html {
+    scroll-behavior: smooth;
+}
+
 body{
     background:var(--light);
     font-family:Arial,sans-serif;
@@ -106,8 +111,8 @@ SPPG BANGUNSARI 02
 Program Makan Bergizi Gratis Untuk Generasi Sehat Indonesia
 </p>
 
-<a href="#" class="btn btn-main btn-lg">
-Lihat Program
+<a href="#tabel-perjalanan" class="btn btn-main btn-lg">
+Lihat Perjalanan Driver
 </a>
 </div>
 </section>
@@ -153,7 +158,7 @@ Dashboard Distribusi
 </div>
 </section>
 
-<section class="py-4 bg-light">
+<section id="tabel-perjalanan" class="py-4 bg-light">
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-10">
@@ -166,12 +171,13 @@ Dashboard Distribusi
                         <thead class="table-primary">
                             <tr>
                                 <th scope="col" class="ps-4 py-3">Nama Sekolah Penerima</th>
-                                <th scope="col" class="text-center py-3" style="width: 250px;">Status Pengiriman</th>
+                                <th scope="col" class="text-center py-3" style="width: 200px;">Status Pengiriman</th>
+                                <th scope="col" class="text-center py-3" style="width: 150px;">Foto Bukti</th>
                             </tr>
                         </thead>
                         <tbody id="liveStatusSekolah">
                             <tr>
-                                <td colspan="2" class="text-center py-4 text-muted">Menghubungkan ke satelit pengiriman...</td>
+                                <td colspan="3" class="text-center py-4 text-muted">Menghubungkan ke satelit pengiriman...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -239,7 +245,6 @@ Galeri Kegiatan
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
-    // Konfigurasi Firebase asli milikmu
     const firebaseConfig = {
         apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
         authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
@@ -250,11 +255,10 @@ Galeri Kegiatan
         measurementId: "G-TE7G4NTT96"
     };
 
-    // Inisialisasi Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 1. Sinkronisasi Data Angka Dashboard (Real-time)
+    // 1. Ambil Angka Dashboard Real-time
     db.collection("dashboard_data").doc("sppg_stats").onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
@@ -265,7 +269,7 @@ Galeri Kegiatan
         }
     });
 
-    // 2. Sinkronisasi Data Link Foto Galeri (Real-time)
+    // 2. Ambil Link Foto Galeri Real-time
     db.collection("galeri_data").doc("sppg_photos").onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
@@ -275,29 +279,34 @@ Galeri Kegiatan
         }
     });
 
-    // 3. Sinkronisasi Tabel Status Pengiriman Sekolah (Real-time dari Kurir)
+    // 3. Sinkronisasi Tabel Status Pengiriman Real-time dari Kurir (Plus Foto Bukti)
     db.collection("sekolah_list").onSnapshot((querySnapshot) => {
         const tableBody = document.getElementById('liveStatusSekolah');
-        tableBody.innerHTML = ""; // Hapus pesan loading
+        tableBody.innerHTML = ""; 
 
         if(querySnapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="2" class="text-center py-3 text-muted">Belum ada daftar sekolah.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-muted">Belum ada daftar sekolah.</td></tr>`;
             return;
         }
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             
-            // Tentukan warna badge status
             let badgeHTML = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill">🚚 Dalam Perjalanan</span>`;
+            let fotoHTML = `<span class="text-muted small">-</span>`;
+
             if (data.status === "Sudah Sampai") {
                 badgeHTML = `<span class="badge bg-success px-3 py-2 rounded-pill">✓ Sudah Sampai</span>`;
+                if(data.foto_bukti) {
+                    fotoHTML = `<img src="${data.foto_bukti}" style="max-height: 50px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">`;
+                }
             }
 
             const rowHTML = `
                 <tr>
-                    <td class="ps-4 fw-semibold text-secondary">${data.nama}</td>
+                    <td class="ps-4 fw-semibold text-secondary">${data.nama || "Nama Sekolah Belum Diisi"}</td>
                     <td class="text-center">${badgeHTML}</td>
+                    <td class="text-center">${fotoHTML}</td>
                 </tr>
             `;
             tableBody.innerHTML += rowHTML;
