@@ -50,19 +50,30 @@
             border-color: var(--primary-blue);
             box-shadow: 0 0 0 3px rgba(30, 96, 145, 0.15);
         }
-        .preview-container {
-            background-color: #f8fafc;
-            border: 2px dashed #cbd5e1;
+        .anggota-row {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
-            padding: 10px;
-            text-align: center;
-            display: none;
-            margin-top: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
         }
-        .preview-img { 
-            max-height: 150px; 
-            border-radius: 8px; 
-            object-fit: cover;
+        .btn-remove {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         .btn-submit {
             background-color: var(--primary-blue);
@@ -83,18 +94,18 @@
 
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
+        <div class="col-md-8 col-lg-7">
             
             <div class="card main-card">
                 <div class="card-header-custom">
                     <i class="fa-solid fa-clipboard-list fa-3x mb-3"></i>
-                    <h3 class="fw-bold mb-1">LAPOR KERJA TIM</h3>
+                    <h3 class="fw-bold mb-1">LAPOR KERJA TIM (MASSAL)</h3>
                     <p class="text-white-50 small mb-0">SPPG Bangunsari 02 - Operasional Harian</p>
                 </div>
                 
                 <div class="card-body p-4">
                     <form id="formLapor">
-                        <div class="mb-3">
+                        <div class="mb-4">
                             <label class="form-label"><i class="fa-solid fa-users me-1 text-primary"></i> Pilih Divisi / Tim</label>
                             <select id="pilihTim" class="form-select" required>
                                 <option value="" disabled selected hidden>Pilih tim Anda...</option>
@@ -105,21 +116,7 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label"><i class="fa-solid fa-user me-1 text-primary"></i> Nama Anggota</label>
-                            <input type="text" id="nama" class="form-control" placeholder="Masukkan nama lengkap" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label"><i class="fa-solid fa-user-check me-1 text-primary"></i> Status Kehadiran</label>
-                            <select id="status" class="form-select" required>
-                                <option value="Hadir">Hadir</option>
-                                <option value="Izin">Izin</option>
-                                <option value="Sakit">Sakit</option>
-                            </select>
-                        </div>
-
-                        <div class="row mb-3">
+                        <div class="row mb-4">
                             <div class="col-6">
                                 <label class="form-label"><i class="fa-solid fa-clock text-primary"></i> Jenis Absen</label>
                                 <select id="tipeJam" class="form-select">
@@ -133,16 +130,18 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label"><i class="fa-solid fa-camera me-1 text-primary"></i> Foto Kegiatan (Opsional)</label>
-                            <input type="file" id="foto" class="form-control" accept="image/*" capture="environment" onchange="prosesGambar(this)">
-                            <div id="container-prev" class="preview-container">
-                                <img id="preview" class="preview-img img-fluid">
-                            </div>
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-user-group text-primary me-1"></i> Daftar Anggota</h5>
+                            <button type="button" class="btn btn-outline-primary btn-sm fw-bold rounded-pill px-3" id="btnTambahAnggota">
+                                <i class="fa-solid fa-plus me-1"></i> Tambah Baris Anggota
+                            </button>
                         </div>
 
-                        <button type="submit" id="btnSubmit" class="btn btn-primary btn-submit w-100 text-white shadow-sm">
-                            <i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan Resmi
+                        <div id="wrapperAnggota"></div>
+
+                        <button type="submit" id="btnSubmit" class="btn btn-primary btn-submit w-100 text-white shadow-sm mt-3">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Kirim Semua Laporan
                         </button>
                     </form>
                 </div>
@@ -170,86 +169,154 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // URL Apps Script Jembatan Google Drive milikmu
     const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwLgcPFVU_7uYLiTUbdld7CtvRcCeg576olUz2UaWgogkaPEfasL5BdJGsuTv7WX3Bg/exec";
-    let gambarBase64 = "";
+    
+    let counterAnggota = 0;
+    let dataGambarMap = {}; // Menampung base64 tiap baris
 
-    // Fungsi Preview Gambar & Ubah ke Base64
-    function prosesGambar(input) {
+    // Fungsi membuat baris form anggota baru secara otomatis
+    function tambahBarisAnggota() {
+        counterAnggota++;
+        const idRow = counterAnggota;
+        const html = `
+            <div class="anggota-row animate__animated animate__fadeIn" id="row-${idRow}">
+                ${idRow > 1 ? `<button type="button" class="btn-remove" onclick="hapusBarisAnggota(${idRow})"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                <div class="row g-2">
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label small text-muted">Nama Anggota #${idRow}</label>
+                        <input type="text" class="form-control input-nama" placeholder="Nama lengkap" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label small text-muted">Kehadiran</label>
+                        <select class="form-select input-status">
+                            <option value="Hadir">Hadir</option>
+                            <option value="Izin">Izin</option>
+                            <option value="Sakit">Sakit</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Foto Kegiatan</label>
+                        <input type="file" class="form-control input-foto" accept="image/*" capture="environment" onchange="prosesGambarBaris(this, ${idRow})">
+                        <div id="prev-box-${idRow}" style="display:none;" class="mt-2 text-center bg-white p-2 rounded border">
+                            <img id="img-prev-${idRow}" style="max-height:100px; border-radius:5px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('wrapperAnggota').insertAdjacentHTML('beforeend', html);
+    }
+
+    // Hapus Baris Anggota jika kelebihan
+    function hapusBarisAnggota(idRow) {
+        document.getElementById(`row-${idRow}`).remove();
+        delete dataGambarMap[idRow];
+    }
+
+    // Proses konversi gambar per baris ke base64
+    function prosesGambarBaris(input, idRow) {
         const file = input.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                gambarBase64 = e.target.result;
-                document.getElementById('preview').src = e.target.result;
-                document.getElementById('container-prev').style.display = "block";
+                dataGambarMap[idRow] = e.target.result;
+                document.getElementById(`img-prev-${idRow}`).src = e.target.result;
+                document.getElementById(`prev-box-${idRow}`).style.display = "block";
             }
             reader.readAsDataURL(file);
         }
     }
 
-    // Event Submit Laporan
+    // Saat halaman dimuat, munculkan 1 baris pertama secara otomatis
+    tambahBarisAnggota();
+
+    // Tombol tambah baris di-klik
+    document.getElementById('btnTambahAnggota').addEventListener('click', tambahBarisAnggota);
+
+    // Kirim seluruh data ke Firebase secara bersamaan menggunakan Batch
     document.getElementById('formLapor').addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const btn = document.getElementById('btnSubmit');
         const tim = document.getElementById('pilihTim').value;
-        const nama = document.getElementById('nama').value.trim();
-        const status = document.getElementById('status').value;
         const tipeJam = document.getElementById('tipeJam').value;
         const jam = document.getElementById('jam').value;
 
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses Laporan...';
+        const rows = document.querySelectorAll('.anggota-row');
+        if(rows.length === 0) {
+            alert("Silakan tambah minimal satu anggota!");
+            return;
+        }
+
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengirim Semua Data Laporan...';
         btn.disabled = true;
 
         try {
-            let urlFotoDrive = "";
+            const batch = db.batch();
 
-            // Jika ada foto, upload dulu ke Google Drive melalui Apps Script
-            if (gambarBase64) {
-                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce me-1"></i> Mengunggah Foto ke Drive...';
-                const uploadResponse = await fetch(appsScriptUrl, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        nama_sekolah: `${tim}_${nama}`,
-                        gambar: gambarBase64
-                    })
-                });
-                const uploadResult = await uploadResponse.json();
-                if (uploadResult.status === "success") {
-                    urlFotoDrive = uploadResult.url;
+            // Looping membaca semua data di setiap baris anggota
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                // Mengambil internal ID numerik dari element row id (cth: row-1 -> 1)
+                const internalId = row.id.split('-')[1]; 
+                
+                const nama = row.querySelector('.input-nama').value.trim();
+                const status = row.querySelector('.input-status').value;
+                const gambarBase64 = dataGambarMap[internalId] || "";
+
+                let urlFotoDrive = "";
+
+                // Upload foto ke Google Drive jika ada file di baris tersebut
+                if (gambarBase64) {
+                    btn.innerHTML = `⏳ Mengunggah foto ${nama}...`;
+                    const uploadResponse = await fetch(appsScriptUrl, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            nama_sekolah: `${tim}_${nama}`,
+                            gambar: gambarBase64
+                        })
+                    });
+                    const uploadResult = await uploadResponse.json();
+                    if (uploadResult.status === "success") {
+                        urlFotoDrive = uploadResult.url;
+                    }
                 }
+
+                // Struktur Payload Dokumen
+                const docId = `${tim}_${nama.replace(/\s+/g, '_').toLowerCase()}`;
+                const docRef = db.collection("divisi_status").doc(docId);
+
+                const dataPayload = {
+                    nama_divisi: tim,
+                    nama_anggota: nama,
+                    status: status,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (tipeJam === "masuk") {
+                    dataPayload.jam_masuk = jam + " WIB";
+                } else {
+                    dataPayload.jam_pulang = jam + " WIB";
+                }
+
+                if (urlFotoDrive) {
+                    dataPayload.foto_kegiatan = urlFotoDrive;
+                }
+
+                // Masukkan perintah update ke antrean batch
+                batch.set(docRef, dataPayload, { merge: true });
             }
 
-            // Atur payload data data secara dinamis berdasarkan jam masuk / jam pulang
-            const docId = `${tim}_${nama.replace(/\s+/g, '_').toLowerCase()}`;
-            const dataPayload = {
-                nama_divisi: tim,
-                nama_anggota: nama,
-                status: status,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
+            // Eksekusi semua data ke Firebase sekaligus dalam 1 kali tembak
+            await batch.commit();
 
-            if (tipeJam === "masuk") {
-                dataPayload.jam_masuk = jam + " WIB";
-            } else {
-                dataPayload.jam_pulang = jam + " WIB";
-            }
-
-            if (urlFotoDrive) {
-                dataPayload.foto_kegiatan = urlFotoDrive;
-            }
-
-            // Simpan atau update dokumen spesifik di Firestore agar masuk ke Admin Dashboard
-            await db.collection("divisi_status").doc(docId).set(dataPayload, { merge: true });
-
-            alert("Laporan divisi berhasil terkirim ke Dashboard Admin!");
+            alert("Hebat! Semua laporan anggota tim berhasil dikirim serentak!");
             window.location.reload();
 
         } catch (error) {
             console.error(error);
-            alert("Gagal mengirim laporan: " + error.message);
-            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan Resmi';
+            alert("Gagal mengirim laporan massal: " + error.message);
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Kirim Semua Laporan';
             btn.disabled = false;
         }
     });
