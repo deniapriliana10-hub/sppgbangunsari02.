@@ -1,1 +1,42 @@
+<script type="module">
+    // Import Firebase SDK yang dibutuhkan
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+    // KODE ASLI FIREBASE KAMU SUDAH MASUK DISINI
+    const firebaseConfig = {
+        apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
+        authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
+        projectId: "sppgbangunsari02-b5cb1",
+        storageBucket: "sppgbangunsari02-b5cb1.firebasestorage.app",
+        messagingSenderId: "497486447370",
+        appId: "1:497486447370:web:0b2b6ce4297b48d18b70f3",
+        measurementId: "G-TE7G4NTT96"
+    };
+
+    // Inisialisasi Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Proses Form Login
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        // Fungsi Firebase untuk memeriksa email & password
+        signInWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                // Berhasil Login
+                alert("Login Berhasil! Selamat datang di SPPG Bangunsari 02.");
+                window.location.href = "index.html"; 
+            })
+            .catch((error) => {
+                // Gagal Login (Email salah/Password salah)
+                const errorMessage = error.message;
+                alert("Gagal Login: Periksa kembali email dan password Anda.");
+                console.error(errorMessage);
+            });
+    });
+</script>
