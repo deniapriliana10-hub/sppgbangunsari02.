@@ -117,28 +117,28 @@ Dashboard Distribusi
 
 <div class="col-md-3">
 <div class="card card-stat shadow p-4 text-center">
-<h2>15</h2>
+<h2 id="stat-sekolah">0</h2>
 <p>Sekolah</p>
 </div>
 </div>
 
 <div class="col-md-3">
 <div class="card card-stat shadow p-4 text-center">
-<h2>2.500</h2>
+<h2 id="stat-porsi">0</h2>
 <p>Porsi Hari Ini</p>
 </div>
 </div>
 
 <div class="col-md-3">
 <div class="card card-stat shadow p-4 text-center">
-<h2>5</h2>
+<h2 id="stat-driver">0</h2>
 <p>Driver Aktif</p>
 </div>
 </div>
 
 <div class="col-md-3">
 <div class="card card-stat shadow p-4 text-center">
-<h2>100%</h2>
+<h2 id="stat-persentase">0%</h2>
 <p>Terkirim</p>
 </div>
 </div>
@@ -198,5 +198,37 @@ Galeri Kegiatan
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Menggunakan konfigurasi Firebase milikmu
+    const firebaseConfig = {
+        apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
+        authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
+        projectId: "sppgbangunsari02-b5cb1",
+        storageBucket: "sppgbangunsari02-b5cb1.firebasestorage.app",
+        messagingSenderId: "497486447370",
+        appId: "1:497486447370:web:0b2b6ce4297b48d18b70f3",
+        measurementId: "G-TE7G4NTT96"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Mendengarkan perubahan data di Firestore secara Real-Time
+    onSnapshot(doc(db, "dashboard_data", "sppg_stats"), (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            // Memasukkan data string dari Firebase langsung ke tampilan HTML
+            document.getElementById('stat-sekolah').innerText = data.sekolah || "0";
+            document.getElementById('stat-porsi').innerText = data.porsi || "0"; 
+            document.getElementById('stat-driver').innerText = data.driver || "0";
+            document.getElementById('stat-persentase').innerText = data.persentase || "0%";
+        }
+    });
+</script>
+
 </body>
 </html>
