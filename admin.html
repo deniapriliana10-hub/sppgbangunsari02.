@@ -1,1 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - SPPG BANGUNSARI 02</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .navbar-admin {
+            background: #0D47A1;
+        }
+        .card-custom {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
 
+<nav class="navbar navbar-expand-lg navbar-dark navbar-admin mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#">SPPG Admin Panel</a>
+        <button class="btn btn-danger btn-sm ms-auto" id="btnLogout">Logout</button>
+    </div>
+</nav>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        
+        <div class="col-md-6">
+            <div class="card card-custom p-4 bg-white">
+                <h4 class="fw-bold text-primary mb-3">Update Angka Dashboard</h4>
+                <hr>
+                <form id="updateStatsForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Jumlah Sekolah</label>
+                        <input type="text" id="inputSekolah" class="form-control" required placeholder="Contoh: 15">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Porsi Hari Ini</label>
+                        <input type="text" id="inputPorsi" class="form-control" required placeholder="Contoh: 2.500">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Driver Aktif</label>
+                        <input type="text" id="inputDriver" class="form-control" required placeholder="Contoh: 5">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Persentase Terkirim</label>
+                        <input type="text" id="inputPersentase" class="form-control" required placeholder="Contoh: 100%">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Update Dashboard</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card card-custom p-4 bg-white">
+                <h4 class="fw-bold text-success mb-3">Update Link Foto Galeri</h4>
+                <hr>
+                <form id="updatePhotosForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Link Foto 1 (Kiri)</label>
+                        <input type="url" id="inputFoto1" class="form-control" required placeholder="https://link-foto-kamu.com/gambar1.jpg">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Link Foto 2 (Tengah)</label>
+                        <input type="url" id="inputFoto2" class="form-control" required placeholder="https://link-foto-kamu.com/gambar2.jpg">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Link Foto 3 (Kanan)</label>
+                        <input type="url" id="inputFoto3" class="form-control" required placeholder="https://link-foto-kamu.com/gambar3.jpg">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 fw-bold py-2">Update Galeri Foto</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+    
+    <div class="text-center mt-4">
+        <a href="index.html" class="btn btn-outline-secondary px-4 fw-semibold">← Lihat Hasil Website Utama</a>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<script>
+    // Konfigurasi Firebase milikmu
+    const firebaseConfig = {
+        apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
+        authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
+        projectId: "sppgbangunsari02-b5cb1",
+        storageBucket: "sppgbangunsari02-b5cb1.firebasestorage.app",
+        messagingSenderId: "497486447370",
+        appId: "1:497486447370:web:0b2b6ce4297b48d18b70f3",
+        measurementId: "G-TE7G4NTT96"
+    };
+
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 1. Ambil data dashboard lama dari Firestore agar form langsung terisi otomatis
+    const statsDocRef = db.collection("dashboard_data").doc("sppg_stats");
+    statsDocRef.get().then((docSnap) => {
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            document.getElementById('inputSekolah').value = data.sekolah || "";
+            document.getElementById('inputPorsi').value = data.porsi || "";
+            document.getElementById('inputDriver').value = data.driver || "";
+            document.getElementById('inputPersentase').value = data.persentase || "";
+        }
+    });
+
+    // 2. Ambil data foto lama dari Firestore agar form terisi otomatis
+    const photosDocRef = db.collection("galeri_data").doc("sppg_photos");
+    photosDocRef.get().then((docSnap) => {
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            document.getElementById('inputFoto1').value = data.foto1 || "";
+            document.getElementById('inputFoto2').value = data.foto2 || "";
+            document.getElementById('inputFoto3').value = data.foto3 || "";
+        }
+    });
+
+    // SINKRONISASI 1: Update Angka Dashboard ke Firebase
+    document.getElementById('updateStatsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        statsDocRef.set({
+            sekolah: document.getElementById('inputSekolah').value,
+            porsi: document.getElementById('inputPorsi').value,
+            driver: document.getElementById('inputDriver').value,
+            persentase: document.getElementById('inputPersentase').value
+        }).then(() => {
+            alert("Angka dashboard berhasil diperbarui!");
+        }).catch((err) => {
+            alert("Error: " + err.message);
+        });
+    });
+
+    // SINKRONISASI 2: Update Link Foto Galeri ke Firebase
+    document.getElementById('updatePhotosForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        photosDocRef.set({
+            foto1: document.getElementById('inputFoto1').value,
+            foto2: document.getElementById('inputFoto2').value,
+            foto3: document.getElementById('inputFoto3').value
+        }).then(() => {
+            alert("Galeri foto berhasil diperbarui!");
+        }).catch((err) => {
+            alert("Error: " + err.message);
+        });
+    });
+
+    // Fitur Log out / Keluar dari halaman Admin
+    document.getElementById('btnLogout').addEventListener('click', function() {
+        firebase.auth().signOut().then(() => {
+            alert("Berhasil logout.");
+            window.location.href = "login.html";
+        });
+    });
+</script>
+</body>
+</html>
