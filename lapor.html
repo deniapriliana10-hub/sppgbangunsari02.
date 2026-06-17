@@ -3,70 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Input Laporan Tim</title>
+    <title>Input Laporan Tim - SPPG Bangunsari 02</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #1e6091;
+            --dark-blue: #0f172a;
+            --light-bg: #f4f7fa;
+            --card-border: rgba(30, 96, 145, 0.1);
+        }
+        body { 
+            background-color: var(--light-bg); 
+            color: #334155;
+            font-family: 'Urbanist', sans-serif;
+            padding: 20px 0;
+        }
+        .main-card {
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            background: #ffffff;
+            box-shadow: 0 15px 35px rgba(30, 96, 145, 0.05);
+            overflow: hidden;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, var(--primary-blue), #164e63);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-blue);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .form-control, .form-select {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30, 96, 145, 0.15);
+        }
+        .preview-container {
+            background-color: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+            display: none;
+            margin-top: 15px;
+        }
+        .preview-img { 
+            max-height: 150px; 
+            border-radius: 8px; 
+            object-fit: cover;
+        }
+        .btn-submit {
+            background-color: var(--primary-blue);
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .btn-submit:hover {
+            background-color: #154a73;
+            transform: translateY(-1px);
+        }
+    </style>
 </head>
-<body class="bg-light p-3">
+<body>
 
-<div class="card shadow-sm p-4">
-    <h4 class="fw-bold mb-3">📝 Lapor Kerja Tim</h4>
-    <form id="formLapor">
-        <div class="mb-3">
-            <label class="form-label">Pilih Tim</label>
-            <select id="pilihTim" class="form-select" required>
-                <option value="Persiapan">Tim Persiapan</option>
-                <option value="Pengolahan">Tim Pengolahan</option>
-                <option value="Pemorsian">Tim Pemorsian</option>
-                <option value="Cuci Ompreng">Tim Cuci Ompreng</option>
-            </select>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="card main-card">
+                <div class="card-header-custom">
+                    <i class="fa-solid fa-clipboard-list fa-3x mb-3"></i>
+                    <h3 class="fw-bold mb-1">LAPOR KERJA TIM</h3>
+                    <p class="text-white-50 small mb-0">SPPG Bangunsari 02 - Operasional Harian</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form id="formLapor">
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fa-solid fa-users me-1 text-primary"></i> Pilih Divisi / Tim</label>
+                            <select id="pilihTim" class="form-select" required>
+                                <option value="" disabled selected hidden>Pilih tim Anda...</option>
+                                <option value="Persiapan">Tim Persiapan</option>
+                                <option value="Pengolahan">Tim Pengolahan</option>
+                                <option value="Pemorsian">Tim Pemorsian</option>
+                                <option value="Cuci Ompreng">Tim Cuci Ompreng</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fa-solid fa-user me-1 text-primary"></i> Nama Anggota</label>
+                            <input type="text" id="nama" class="form-control" placeholder="Masukkan nama lengkap" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fa-solid fa-user-check me-1 text-primary"></i> Status Kehadiran</label>
+                            <select id="status" class="form-select" required>
+                                <option value="Hadir">Hadir</option>
+                                <option value="Izin">Izin</option>
+                                <option value="Sakit">Sakit</option>
+                            </select>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label"><i class="fa-solid fa-clock text-primary"></i> Jenis Absen</label>
+                                <select id="tipeJam" class="form-select">
+                                    <option value="masuk">Jam Masuk</option>
+                                    <option value="pulang">Jam Pulang</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Waktu</label>
+                                <input type="time" id="jam" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label"><i class="fa-solid fa-camera me-1 text-primary"></i> Foto Kegiatan (Opsional)</label>
+                            <input type="file" id="foto" class="form-control" accept="image/*" capture="environment" onchange="prosesGambar(this)">
+                            <div id="container-prev" class="preview-container">
+                                <img id="preview" class="preview-img img-fluid">
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btnSubmit" class="btn btn-primary btn-submit w-100 text-white shadow-sm">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan Resmi
+                        </button>
+                    </form>
+                </div>
+            </div>
+
         </div>
-        <div class="mb-3">
-            <label class="form-label">Nama Anggota</label>
-            <input type="text" id="nama" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Status</label>
-            <select id="status" class="form-select">
-                <option value="Hadir">Hadir</option>
-                <option value="Izin">Izin</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Jam (Masuk/Pulang)</label>
-            <input type="time" id="jam" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Foto Kegiatan</label>
-            <input type="file" id="foto" class="form-control" accept="image/*">
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Kirim Laporan</button>
-    </form>
+    </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script>
-    // Inisialisasi Firebase sama dengan admin.html
-    // ...
 
-    document.getElementById('formLapor').addEventListener('submit', (e) => {
+<script>
+    // Konfigurasi Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
+        authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
+        projectId: "sppgbangunsari02-b5cb1",
+        storageBucket: "sppgbangunsari02-b5cb1.firebasestorage.app",
+        messagingSenderId: "497486447370",
+        appId: "1:497486447370:web:0b2b6ce4297b48d18b70f3",
+        measurementId: "G-TE7G4NTT96"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // URL Apps Script Jembatan Google Drive milikmu
+    const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwLgcPFVU_7uYLiTUbdld7CtvRcCeg576olUz2UaWgogkaPEfasL5BdJGsuTv7WX3Bg/exec";
+    let gambarBase64 = "";
+
+    // Fungsi Preview Gambar & Ubah ke Base64
+    function prosesGambar(input) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                gambarBase64 = e.target.result;
+                document.getElementById('preview').src = e.target.result;
+                document.getElementById('container-prev').style.display = "block";
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Event Submit Laporan
+    document.getElementById('formLapor').addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        const btn = document.getElementById('btnSubmit');
         const tim = document.getElementById('pilihTim').value;
-        const nama = document.getElementById('nama').value;
+        const nama = document.getElementById('nama').value.trim();
         const status = document.getElementById('status').value;
+        const tipeJam = document.getElementById('tipeJam').value;
         const jam = document.getElementById('jam').value;
 
-        // Simpan ke Firestore
-        db.collection("divisi_status").add({
-            nama_divisi: tim,
-            nama_anggota: nama,
-            status: status,
-            jam_masuk: jam, // Sesuaikan logika masuk/pulang
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            alert("Laporan terkirim!");
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses Laporan...';
+        btn.disabled = true;
+
+        try {
+            let urlFotoDrive = "";
+
+            // Jika ada foto, upload dulu ke Google Drive melalui Apps Script
+            if (gambarBase64) {
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce me-1"></i> Mengunggah Foto ke Drive...';
+                const uploadResponse = await fetch(appsScriptUrl, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        nama_sekolah: `${tim}_${nama}`,
+                        gambar: gambarBase64
+                    })
+                });
+                const uploadResult = await uploadResponse.json();
+                if (uploadResult.status === "success") {
+                    urlFotoDrive = uploadResult.url;
+                }
+            }
+
+            // Atur payload data data secara dinamis berdasarkan jam masuk / jam pulang
+            const docId = `${tim}_${nama.replace(/\s+/g, '_').toLowerCase()}`;
+            const dataPayload = {
+                nama_divisi: tim,
+                nama_anggota: nama,
+                status: status,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (tipeJam === "masuk") {
+                dataPayload.jam_masuk = jam + " WIB";
+            } else {
+                dataPayload.jam_pulang = jam + " WIB";
+            }
+
+            if (urlFotoDrive) {
+                dataPayload.foto_kegiatan = urlFotoDrive;
+            }
+
+            // Simpan atau update dokumen spesifik di Firestore agar masuk ke Admin Dashboard
+            await db.collection("divisi_status").doc(docId).set(dataPayload, { merge: true });
+
+            alert("Laporan divisi berhasil terkirim ke Dashboard Admin!");
             window.location.reload();
-        });
+
+        } catch (error) {
+            console.error(error);
+            alert("Gagal mengirim laporan: " + error.message);
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan Resmi';
+            btn.disabled = false;
+        }
     });
 </script>
 </body>
