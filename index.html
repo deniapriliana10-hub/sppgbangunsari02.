@@ -59,6 +59,12 @@ body{
     color:var(--primary);
     font-weight:bold;
 }
+
+.table-custom {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
 </style>
 </head>
 <body>
@@ -144,6 +150,35 @@ Dashboard Distribusi
 </div>
 
 </div>
+</div>
+</section>
+
+<section class="py-4 bg-light">
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card p-4 border-0 shadow-sm rounded-4">
+                <h3 class="fw-bold text-center text-primary mb-3">🚚 Status Pengiriman Hari Ini</h3>
+                <p class="text-center text-muted small mb-4">Data diperbarui otomatis langsung dari kurir di lapangan</p>
+                
+                <div class="table-responsive table-custom">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-primary">
+                            <tr>
+                                <th scope="col" class="ps-4 py-3">Nama Sekolah Penerima</th>
+                                <th scope="col" class="text-center py-3" style="width: 250px;">Status Pengiriman</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveStatusSekolah">
+                            <tr>
+                                <td colspan="2" class="text-center py-4 text-muted">Menghubungkan ke satelit pengiriman...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 </section>
 
@@ -238,6 +273,35 @@ Galeri Kegiatan
             if (data.foto2) document.getElementById('galeri-foto2').src = data.foto2;
             if (data.foto3) document.getElementById('galeri-foto3').src = data.foto3;
         }
+    });
+
+    // 3. Sinkronisasi Tabel Status Pengiriman Sekolah (Real-time dari Kurir)
+    db.collection("sekolah_list").onSnapshot((querySnapshot) => {
+        const tableBody = document.getElementById('liveStatusSekolah');
+        tableBody.innerHTML = ""; // Hapus pesan loading
+
+        if(querySnapshot.empty) {
+            tableBody.innerHTML = `<tr><td colspan="2" class="text-center py-3 text-muted">Belum ada daftar sekolah.</td></tr>`;
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            
+            // Tentukan warna badge status
+            let badgeHTML = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill">🚚 Dalam Perjalanan</span>`;
+            if (data.status === "Sudah Sampai") {
+                badgeHTML = `<span class="badge bg-success px-3 py-2 rounded-pill">✓ Sudah Sampai</span>`;
+            }
+
+            const rowHTML = `
+                <tr>
+                    <td class="ps-4 fw-semibold text-secondary">${data.nama}</td>
+                    <td class="text-center">${badgeHTML}</td>
+                </tr>
+            `;
+            tableBody.innerHTML += rowHTML;
+        });
     });
 </script>
 
