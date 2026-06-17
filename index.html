@@ -238,29 +238,36 @@ Dashboard Distribusi
 
 <div class="row g-4">
 
-<div class="col-md-3">
-<div class="card card-stat shadow-sm p-4 text-center">
+<div class="col-md-2 col-sm-6">
+<div class="card card-stat shadow-sm p-4 text-center h-100">
 <h2 id="stat-sekolah">0</h2>
 <p><i class="fa-solid fa-school text-primary me-1"></i> Sekolah</p>
 </div>
 </div>
 
-<div class="col-md-3">
-<div class="card card-stat shadow-sm p-4 text-center">
+<div class="col-md-2 col-sm-6">
+<div class="card card-stat shadow-sm p-4 text-center h-100">
+<h2 id="stat-posyandu">0</h2>
+<p><i class="fa-solid fa-house-medical text-danger me-1"></i> Posyandu</p>
+</div>
+</div>
+
+<div class="col-md-3 col-sm-6">
+<div class="card card-stat shadow-sm p-4 text-center h-100">
 <h2 id="stat-porsi">0</h2>
 <p><i class="fa-solid fa-utensils text-primary me-1"></i> Porsi Hari Ini</p>
 </div>
 </div>
 
-<div class="col-md-3">
-<div class="card card-stat shadow-sm p-4 text-center">
+<div class="col-md-2 col-sm-6">
+<div class="card card-stat shadow-sm p-4 text-center h-100">
 <h2 id="stat-driver">0</h2>
 <p><i class="fa-solid fa-truck text-primary me-1"></i> Driver Aktif</p>
 </div>
 </div>
 
-<div class="col-md-3">
-<div class="card card-stat shadow-sm p-4 text-center bg-primary text-white">
+<div class="col-md-3 col-sm-12">
+<div class="card card-stat shadow-sm p-4 text-center bg-primary text-white h-100">
 <h2 id="stat-persentase">0%</h2>
 <p class="mb-0"><i class="fa-solid fa-circle-check me-1"></i> Terkirim</p>
 </div>
@@ -378,11 +385,12 @@ MENU HARI INI
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 1. Ambil Angka Dashboard Real-time
+    // 1. Ambil Angka Dashboard Real-time (SINKRON DENGAN DATA POSYANDU)
     db.collection("dashboard_data").doc("sppg_stats").onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
             document.getElementById('stat-sekolah').innerText = data.sekolah || "0";
+            document.getElementById('stat-posyandu').innerText = data.posyandu || "0";
             document.getElementById('stat-porsi').innerText = data.porsi || "0"; 
             document.getElementById('stat-driver').innerText = data.driver || "0";
         }
