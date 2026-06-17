@@ -80,6 +80,23 @@
         </div>
 
     </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card card-custom p-4 bg-white">
+                <h4 class="fw-bold text-dark mb-3">📋 Live Monitoring Pengiriman Driver</h4>
+                <p class="text-muted small">Pantau sekolah mana saja yang sudah selesai dikirim oleh driver hari ini.</p>
+                <hr>
+                <ul class="list-group" id="adminMonitoringList">
+                    <li class="list-group-item text-center text-muted">Memuat status pengiriman...</li>
+                </ul>
+                
+                <button class="btn btn-danger w-100 fw-bold py-2 mt-4" id="btnResetStatus">
+                    🔄 RESET STATUS SEMUA SEKOLAH (UNTUK BESOK PAGI)
+                </button>
+            </div>
+        </div>
+    </div>
     
     <div class="text-center mt-4">
         <a href="index.html" class="btn btn-outline-secondary px-4 fw-semibold">← Lihat Hasil Website Utama</a>
@@ -91,7 +108,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
-    // Konfigurasi Firebase milikmu
     const firebaseConfig = {
         apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
         authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
@@ -102,11 +118,10 @@
         measurementId: "G-TE7G4NTT96"
     };
 
-    // Inisialisasi Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 1. Ambil data dashboard lama dari Firestore agar form langsung terisi otomatis
+    // 1. Load Data Dashboard ke Form
     const statsDocRef = db.collection("dashboard_data").doc("sppg_stats");
     statsDocRef.get().then((docSnap) => {
         if (docSnap.exists) {
@@ -118,7 +133,7 @@
         }
     });
 
-    // 2. Ambil data foto lama dari Firestore agar form terisi otomatis
+    // 2. Load Link Foto ke Form
     const photosDocRef = db.collection("galeri_data").doc("sppg_photos");
     photosDocRef.get().then((docSnap) => {
         if (docSnap.exists) {
@@ -129,7 +144,7 @@
         }
     });
 
-    // SINKRONISASI 1: Update Angka Dashboard ke Firebase
+    // SINKRONISASI: Form Dashboard
     document.getElementById('updateStatsForm').addEventListener('submit', function(e) {
         e.preventDefault();
         statsDocRef.set({
@@ -144,7 +159,7 @@
         });
     });
 
-    // SINKRONISASI 2: Update Link Foto Galeri ke Firebase
+    // SINKRONISASI: Form Galeri Foto
     document.getElementById('updatePhotosForm').addEventListener('submit', function(e) {
         e.preventDefault();
         photosDocRef.set({
@@ -158,7 +173,48 @@
         });
     });
 
-    // Fitur Log out / Keluar dari halaman Admin
+    // 3. MONITORING LIVE DRIVER: Menampilkan daftar sekolah di halaman admin
+    db.collection("sekolah_list").onSnapshot((querySnapshot) => {
+        const adminList = document.getElementById('adminMonitoringList');
+        adminList.innerHTML = "";
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const badgeColor = data.status === "Sudah Sampai" ? "badge bg-success" : "badge bg-warning text-dark";
+            const statusText = data.status === "Sudah Sampai" ? "✓ Sudah Sampai" : "Dalam Perjalanan";
+            
+            adminList.innerHTML += `
+                <li class="list-group-item d-flex justify-content-between align-items-center fw-semibold text-secondary">
+                    ${data.nama || "Nama Sekolah Belum Diisi"}
+                    <span class="${badgeColor} px-3 py-2 rounded-pill">${statusText}</span>
+                </li>
+            `;
+        });
+    });
+
+    // 4. LOGIKA TOMBOL RESET HARIAN: Mengubah semua status kembali ke awal
+    document.getElementById('btnResetStatus').addEventListener('click', function() {
+        if (confirm("Apakah Anda yakin ingin me-reset status pengiriman semua sekolah menjadi 'Dalam Perjalanan' untuk besok pagi?")) {
+            
+            db.collection("sekolah_list").get().then((querySnapshot) => {
+                // Menggunakan sistem batch agar proses update berjalan sekaligus serentak
+                const batch = db.batch();
+                
+                querySnapshot.forEach((doc) => {
+                    batch.update(doc.ref, { status: "Dalam Perjalanan" });
+                });
+                
+                return batch.commit();
+            }).then(() => {
+                alert("Berhasil! Semua status sekolah telah kembali menjadi 'Dalam Perjalanan'. Siap untuk besok!");
+            }).catch((err) => {
+                alert("Gagal mereset: " + err.message);
+            });
+            
+        }
+    });
+
+    // Logout Admin
     document.getElementById('btnLogout').addEventListener('click', function() {
         firebase.auth().signOut().then(() => {
             alert("Berhasil logout.");
