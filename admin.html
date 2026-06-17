@@ -215,7 +215,16 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-
+// ==========================================
+// SKRIP PROTEKSI HALAMAN ADMIN (WAJIB LOGIN)
+// ==========================================
+firebase.auth().onAuthStateChanged((user) => {
+    if (!user) {
+        // Jika tidak ada user yang login, tendang ke halaman login
+        alert("Akses Ditolak! Anda harus login terlebih dahulu.");
+        window.location.href = "login.html";
+    }
+});
     // RENDER FOTO AKTIF DARI FIRESTORE KE FORM & KOLOM INPUT ADMIN
     db.collection("galeri_data").doc("sppg_photos").onSnapshot((doc) => {
         if (doc.exists) {
