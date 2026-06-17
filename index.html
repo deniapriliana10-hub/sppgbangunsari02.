@@ -88,7 +88,7 @@ body {
     color: #64748b;
     margin-bottom: 0;
     font-size: 14px;
-    text-uppercase;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 .card-stat:hover {
@@ -154,7 +154,6 @@ body {
     font-weight: 600;
     font-size: 14px;
     letter-spacing: 0.5px;
-    text-uppercase: uppercase;
 }
 .table table-hover tbody tr:hover {
     background-color: #f8fafc;
@@ -190,7 +189,7 @@ body {
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
 <div class="container">
 <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
- <i class="fa-solid fa-gradient fa-building-shield"></i> SPPG BANGUNSARI 02
+ <i class="fa-solid fa-building-shield"></i> SPPG BANGUNSARI 02
 </a>
 
 <button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#menu">
@@ -285,12 +284,13 @@ Dashboard Distribusi
                             <tr class="text-white">
                                 <th scope="col" class="ps-4 py-3 border-0">Nama Sekolah Penerima</th>
                                 <th scope="col" class="text-center py-3 border-0" style="width: 200px;">Status Pengiriman</th>
+                                <th scope="col" class="text-center py-3 border-0" style="width: 150px;">Waktu Tiba</th>
                                 <th scope="col" class="text-center py-3 border-0" style="width: 150px;">Foto Bukti</th>
                             </tr>
                         </thead>
                         <tbody id="liveStatusSekolah">
                             <tr>
-                                <td colspan="3" class="text-center py-5 text-muted">
+                                <td colspan="4" class="text-center py-5 text-muted">
                                     <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                                     Menghubungkan ke satelit pengiriman...
                                 </td>
@@ -378,7 +378,7 @@ MENU HARI INI
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 1. Ambil Angka Dashboard Real-time (Kecuali Persentase karena sudah otomatis)
+    // 1. Ambil Angka Dashboard Real-time
     db.collection("dashboard_data").doc("sppg_stats").onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
@@ -398,13 +398,13 @@ MENU HARI INI
         }
     });
 
-    // 3. Sinkronisasi Tabel Status Pengiriman + HITUNG PERSENTASE OTOMATIS
+    // 3. Sinkronisasi Tabel Status Pengiriman + WAKTU TIBA + HITUNG PERSENTASE OTOMATIS
     db.collection("sekolah_list").onSnapshot((querySnapshot) => {
         const tableBody = document.getElementById('liveStatusSekolah');
         tableBody.innerHTML = ""; 
 
         if(querySnapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-muted">Belum ada daftar sekolah.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Belum ada daftar sekolah.</td></tr>`;
             document.getElementById('stat-persentase').innerText = "0%";
             return;
         }
@@ -418,10 +418,16 @@ MENU HARI INI
             
             let badgeHTML = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style="font-size: 12px;"><i class="fa-solid fa-truck-moving me-1"></i> Dalam Perjalanan</span>`;
             let fotoHTML = `<span class="text-muted small">-</span>`;
+            let jamTibaHTML = `<td class="text-center text-muted small">-</td>`;
 
             if (data.status === "Sudah Sampai") {
                 sekolahSelesai++; 
                 badgeHTML = `<span class="badge bg-success px-3 py-2 rounded-pill fw-bold" style="font-size: 12px;"><i class="fa-solid fa-circle-check me-1"></i> Sudah Sampai</span>`;
+                
+                if (data.waktu_tiba) {
+                    jamTibaHTML = `<td class="text-center fw-bold text-success" style="font-size: 14px;"><i class="fa-regular fa-clock me-1"></i> ${data.waktu_tiba}</td>`;
+                }
+
                 if(data.foto_bukti) {
                     fotoHTML = `<img src="${data.foto_bukti}" style="max-height: 45px; width: 60px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer;" onclick="window.open('${data.foto_bukti}', '_blank')">`;
                 }
@@ -431,6 +437,7 @@ MENU HARI INI
                 <tr>
                     <td class="ps-4 fw-bold text-dark" style="font-size: 15px;">${data.nama || "Nama Sekolah Belum Diisi"}</td>
                     <td class="text-center">${badgeHTML}</td>
+                    ${jamTibaHTML}
                     <td class="text-center">${fotoHTML}</td>
                 </tr>
             `;
