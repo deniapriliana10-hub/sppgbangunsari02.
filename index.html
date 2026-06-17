@@ -14,7 +14,6 @@
     --light:#F5FAFF;
 }
 
-/* Membuat efek gulir halaman menjadi halus saat tombol diklik */
 html {
     scroll-behavior: smooth;
 }
@@ -148,9 +147,9 @@ Dashboard Distribusi
 </div>
 
 <div class="col-md-3">
-<div class="card card-stat shadow p-4 text-center">
+<div class="card card-stat shadow p-4 text-center bg-primary text-white">
 <h2 id="stat-persentase">0%</h2>
-<p>Terkirim</p>
+<p class="mb-0">Terkirim (Otomatis)</p>
 </div>
 </div>
 
@@ -164,7 +163,7 @@ Dashboard Distribusi
         <div class="col-md-10">
             <div class="card p-4 border-0 shadow-sm rounded-4">
                 <h3 class="fw-bold text-center text-primary mb-3">🚚 Status Pengiriman Hari Ini</h3>
-                <p class="text-center text-muted small mb-4">Data diperbarui otomatis langsung oleh Driver di lapangan</p>
+                <p class="text-center text-muted small mb-4">Data diperbarui otomatis langsung dari kurir di lapangan</p>
                 
                 <div class="table-responsive table-custom">
                     <table class="table table-hover align-middle mb-0">
@@ -258,14 +257,13 @@ Galeri Kegiatan
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 1. Ambil Angka Dashboard Real-time
+    // 1. Ambil Angka Dashboard Real-time (Kecuali Persentase karena sudah otomatis)
     db.collection("dashboard_data").doc("sppg_stats").onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
             document.getElementById('stat-sekolah').innerText = data.sekolah || "0";
             document.getElementById('stat-porsi').innerText = data.porsi || "0"; 
             document.getElementById('stat-driver').innerText = data.driver || "0";
-            document.getElementById('stat-persentase').innerText = data.persentase || "0%";
         }
     });
 
@@ -279,23 +277,29 @@ Galeri Kegiatan
         }
     });
 
-    // 3. Sinkronisasi Tabel Status Pengiriman Real-time dari Kurir (Plus Foto Bukti)
+    // 3. Sinkronisasi Tabel Status Pengiriman + HITUNG PERSENTASE OTOMATIS
     db.collection("sekolah_list").onSnapshot((querySnapshot) => {
         const tableBody = document.getElementById('liveStatusSekolah');
         tableBody.innerHTML = ""; 
 
         if(querySnapshot.empty) {
             tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-3 text-muted">Belum ada daftar sekolah.</td></tr>`;
+            document.getElementById('stat-persentase').innerText = "0%";
             return;
         }
 
+        let totalSekolah = 0;
+        let sekolahSelesai = 0;
+
         querySnapshot.forEach((doc) => {
             const data = doc.data();
+            totalSekolah++; 
             
             let badgeHTML = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill">🚚 Dalam Perjalanan</span>`;
             let fotoHTML = `<span class="text-muted small">-</span>`;
 
             if (data.status === "Sudah Sampai") {
+                sekolahSelesai++; 
                 badgeHTML = `<span class="badge bg-success px-3 py-2 rounded-pill">✓ Sudah Sampai</span>`;
                 if(data.foto_bukti) {
                     fotoHTML = `<img src="${data.foto_bukti}" style="max-height: 50px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">`;
@@ -311,6 +315,10 @@ Galeri Kegiatan
             `;
             tableBody.innerHTML += rowHTML;
         });
+
+        // Hitung persentase real-time
+        let hitungPersen = Math.round((sekolahSelesai / totalSekolah) * 100) || 0;
+        document.getElementById('stat-persentase').innerText = hitungPersen + "%";
     });
 </script>
 
