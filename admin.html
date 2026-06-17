@@ -13,6 +13,7 @@
             --card-bg: #1e293b;
             --neon-lime: #deff9a;
             --text-gray: #94a3b8;
+            --primary-blue: #1e6091;
         }
         body { 
             background-color: var(--bg-dark); 
@@ -48,6 +49,33 @@
         .btn-view:hover { text-decoration: underline; }
         .section-icon { margin-right: 10px; color: var(--neon-lime); }
         .table-distribusi { background-color: #000; border-radius: 10px; overflow: hidden; }
+
+        /* Style Tambahan untuk Preview Upload Foto Galeri di Admin */
+        .photo-slot-box {
+            background: rgba(255,255,255,0.03); 
+            border: 1px dashed rgba(222, 255, 154, 0.2);
+            transition: all 0.3s ease;
+        }
+        .photo-slot-box:hover {
+            border-color: var(--neon-lime);
+            background: rgba(222, 255, 154, 0.02);
+        }
+        .img-admin-preview {
+            height: 110px; 
+            width: 100%; 
+            object-fit: cover; 
+            border-radius: 8px;
+            transition: opacity 0.2s ease;
+        }
+        .form-control-dark {
+            background-color: rgba(0,0,0,0.2) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            color: #ffffff !important;
+        }
+        .form-control-dark:focus {
+            border-color: var(--neon-lime) !important;
+            box-shadow: 0 0 0 0.25rem rgba(222, 255, 154, 0.15) !important;
+        }
     </style>
 </head>
 <body>
@@ -55,9 +83,45 @@
 <div class="container">
     <div class="header-title">
         <h1 class="fw-bold">OPERATIONAL <span style="color: var(--neon-lime);">CONTROL</span></h1>
-        <p class="text-secondary">SPPG Bangunsari 02 - Real-Time Executive Monitoring</p>
+        <p class="text-secondary">SPPG Bangunsari 02 - Real-Time Executive Monitoring & Management</p>
     </div>
 
+    <div class="card-divisi">
+        <h4 class="fw-bold mb-1"><i class="fa-solid fa-images section-icon"></i> Kelola Foto Menu Hari Ini</h4>
+        <p class="text-muted small mb-4">Unggah foto di bawah ini untuk mengubah gambar pada susunan galeri "MENU HARI INI" di halaman depan secara instan.</p>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="p-3 rounded-3 photo-slot-box">
+                    <label class="form-label fw-bold small text-white-50 mb-2"><i class="fa-solid fa-image me-1"></i> Foto Menu 1 (Kiri)</label>
+                    <input type="file" class="form-control form-control-sm form-control-dark mb-3" accept="image/*" onchange="uploadFotoUtama(this, 'foto1')">
+                    <div class="text-center bg-dark p-2 rounded border border-secondary border-opacity-10 d-flex align-items-center justify-content-center" style="min-height: 126px;">
+                        <img id="preview-admin-foto1" src="https://picsum.photos/600/400?1" class="img-admin-preview">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 rounded-3 photo-slot-box">
+                    <label class="form-label fw-bold small text-white-50 mb-2"><i class="fa-solid fa-image me-1"></i> Foto Menu 2 (Tengah)</label>
+                    <input type="file" class="form-control form-control-sm form-control-dark mb-3" accept="image/*" onchange="uploadFotoUtama(this, 'foto2')">
+                    <div class="text-center bg-dark p-2 rounded border border-secondary border-opacity-10 d-flex align-items-center justify-content-center" style="min-height: 126px;">
+                        <img id="preview-admin-foto2" src="https://picsum.photos/600/400?2" class="img-admin-preview">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 rounded-3 photo-slot-box">
+                    <label class="form-label fw-bold small text-white-50 mb-2"><i class="fa-solid fa-image me-1"></i> Foto Menu 3 (Kanan)</label>
+                    <input type="file" class="form-control form-control-sm form-control-dark mb-3" accept="image/*" onchange="uploadFotoUtama(this, 'foto3')">
+                    <div class="text-center bg-dark p-2 rounded border border-secondary border-opacity-10 d-flex align-items-center justify-content-center" style="min-height: 126px;">
+                        <img id="preview-admin-foto3" src="https://picsum.photos/600/400?3" class="img-admin-preview">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="card-divisi">
         <h4 class="fw-bold mb-4"><i class="fa-solid fa-boxes-packing section-icon"></i> Tim Persiapan</h4>
         <div class="table-responsive">
@@ -140,6 +204,72 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    // URL Web App Apps Script Jembatan Google Drive milikmu
+    const appsScriptUrlGaleri = "https://script.google.com/macros/s/AKfycbwLgcPFVU_7uYLiTUbdld7CtvRcCeg576olUz2UaWgogkaPEfasL5BdJGsuTv7WX3Bg/exec";
+
+    // -------------------------------------------------------------------------
+    // LOGIKA REAL-TIME SYNC & UPLOAD FOTO UTAMA UNTUK MENU HARI INI
+    // -------------------------------------------------------------------------
+    // Membaca status foto aktif dari database ke form admin
+    db.collection("galeri_data").doc("sppg_photos").onSnapshot((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.foto1) document.getElementById('preview-admin-foto1').src = data.foto1;
+            if (data.foto2) document.getElementById('preview-admin-foto2').src = data.foto2;
+            if (data.foto3) document.getElementById('preview-admin-foto3').src = data.foto3;
+        }
+    });
+
+    // Jalankan fungsi unggah foto via Apps Script lalu set URL-nya ke Firestore
+    async function uploadFotoUtama(inputElement, slotFoto) {
+        const file = inputElement.files[0];
+        if (!file) return;
+
+        const imgPreview = document.getElementById(`preview-admin-${slotFoto}`);
+        const originalSrc = imgPreview.src;
+        imgPreview.style.opacity = "0.3"; // Efek semi transparan penanda loading
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const base64Data = e.target.result;
+
+            try {
+                // Tembak berkas gambar ke jembatan Google Drive Apps Script Anda
+                const response = await fetch(appsScriptUrlGaleri, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        nama_sekolah: `Galeri_Utama_${slotFoto}`,
+                        gambar: base64Data
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    const urlFotoDrive = result.url;
+
+                    // Daftarkan link publik Drive tersebut ke berkas dokumen galeri depan
+                    await db.collection("galeri_data").doc("sppg_photos").set({
+                        [slotFoto]: urlFotoDrive
+                    }, { merge: true });
+
+                    alert(`Foto Galeri ${slotFoto.slice(-1)} Berhasil Diperbarui!`);
+                } else {
+                    alert("Akses Google Apps Script Terputus / Gagal Mengunggah.");
+                    imgPreview.src = originalSrc;
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Kesalahan Transaksi Berkas: " + error.message);
+                imgPreview.src = originalSrc;
+            } finally {
+                imgPreview.style.opacity = "1";
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+    // -------------------------------------------------------------------------
 
     // Fungsi untuk merender tabel divisi
     function renderDivisi(namaDivisi, tableId) {
