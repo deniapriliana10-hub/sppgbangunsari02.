@@ -56,26 +56,10 @@
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 12px;
-            position: relative;
         }
-        .btn-remove {
-            position: absolute;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            z-index: 10;
+        .nama-label {
+            font-weight: 700;
+            color: var(--dark-blue);
         }
         .preview-container {
             background-color: #f8fafc;
@@ -104,6 +88,12 @@
             background-color: #154a73;
             transform: translateY(-1px);
         }
+        #infoPilihTim {
+            background: #fffbeb;
+            border: 1px dashed #f59e0b;
+            color: #b45309;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
@@ -116,14 +106,14 @@
                 <div class="card-header-custom">
                     <i class="fa-solid fa-clipboard-list fa-3x mb-3"></i>
                     <h3 class="fw-bold mb-1">LAPOR OPERASIONAL TIM</h3>
-                    <p class="text-white-50 small mb-0">SPPG Bangunsari 02 - Input Data Kolektif</p>
+                    <p class="text-white-50 small mb-0">SPPG Bangunsari 02 - Sistem Presensi Otomatis</p>
                 </div>
                 
                 <div class="card-body p-4">
                     <form id="formLapor">
                         <div class="mb-3">
                             <label class="form-label"><i class="fa-solid fa-users me-1 text-primary"></i> Pilih Divisi / Tim</label>
-                            <select id="pilihTim" class="form-select" required>
+                            <select id="pilihTim" class="form-select" required onchange="renderNamaAnggota(this.value)">
                                 <option value="" disabled selected hidden>Pilih tim Anda...</option>
                                 <option value="Persiapan">Tim Persiapan</option>
                                 <option value="Pengolahan">Tim Pengolahan</option>
@@ -158,14 +148,15 @@
 
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-user-check text-primary me-1"></i> Data Kehadiran Anggota</h5>
-                            <button type="button" class="btn btn-outline-primary btn-sm fw-bold rounded-pill px-3" id="btnTambahAnggota">
-                                <i class="fa-solid fa-plus me-1"></i> Tambah Anggota
-                            </button>
                         </div>
 
-                        <div id="wrapperAnggota"></div>
+                        <div id="wrapperAnggota">
+                            <div id="infoPilihTim" class="p-3 text-center small">
+                                <i class="fa-solid fa-circle-info me-1"></i> Silakan pilih tim/divisi di atas terlebih dahulu untuk memunculkan daftar nama anggota.
+                            </div>
+                        </div>
 
-                        <button type="submit" id="btnSubmit" class="btn btn-primary btn-submit w-100 text-white shadow-sm mt-4">
+                        <button type="submit" id="btnSubmit" class="btn btn-primary btn-submit w-100 text-white shadow-sm mt-4" disabled>
                             <i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan Tim
                         </button>
                     </form>
@@ -193,10 +184,20 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // ⚠️ SILAKAN MASUKKAN LINK WEB APP GOOGLE APPS SCRIPT ANDA YANG BARU DI SINI
     const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwdCqsYFa9PGX3_L4tkBVDpYHCoGPzY2QnvIldHEWTk4Z1qpkOJ2g7A1C_iqF1wih73pw/exec";
     
-    let counterAnggota = 0;
-    let gambarTimBase64 = ""; // Satu foto tunggal untuk satu tim
+    // =========================================================================
+    // DATABASE DATA NAMA ANGGOTA TIAP DIVISI (Silakan edit/tambah di sini)
+    // =========================================================================
+    const dataAnggota = {
+        "Persiapan": ["Ahmad Fauzi", "Budi Santoso", "Citra Lestari", "Dani Setiawan"],
+        "Pengolahan": ["Eko Prasetyo", "Fitri Handayani", "Guntur Wibowo", "Hendra Wijaya"],
+        "Pemorsian": ["Indah Permata", "Joko Susilo", "Kartika Sari", "Lukman Hakim"],
+        "Cuci Ompreng": ["Mega Utami", "Nugroho", "Oki Saputra", "Putri Rahayu"]
+    };
+
+    let gambarTimBase64 = "";
 
     // Fungsi Preview Foto Tim
     function prosesGambarTim(input) {
@@ -212,38 +213,46 @@
         }
     }
 
-    // Fungsi Menambah Baris Anggota (Hanya Nama & Hadir)
-    function tambahBarisAnggota() {
-        counterAnggota++;
-        const idRow = counterAnggota;
-        const html = `
-            <div class="anggota-row" id="row-${idRow}">
-                ${idRow > 1 ? `<button type="button" class="btn-remove" onclick="hapusBarisAnggota(${idRow})"><i class="fa-solid fa-xmark"></i></button>` : ''}
-                <div class="row g-2 align-items-center ${idRow > 1 ? 'pe-4' : ''}">
-                    <div class="col-7 col-sm-8">
-                        <input type="text" class="form-control input-nama" placeholder="Nama Anggota #${idRow}" required>
-                    </div>
-                    <div class="col-5 col-sm-4">
-                        <select class="form-select input-status">
-                            <option value="Hadir">Hadir</option>
-                            <option value="Izin">Izin</option>
-                            <option value="Sakit">Sakit</option>
-                        </select>
+    // =========================================================================
+    // FUNGSI UTAMA: MEMUNCULKAN NAMA ANGGOTA SECARA OTOMATIS SAAT TIM DIPILIH
+    // =========================================================================
+    function renderNamaAnggota(namaTim) {
+        const wrapper = document.getElementById('wrapperAnggota');
+        const btnSubmit = document.getElementById('btnSubmit');
+        wrapper.innerHTML = "";
+
+        if (!dataAnggota[namaTim] || dataAnggota[namaTim].length === 0) {
+            wrapper.innerHTML = `<div class="p-3 text-center text-danger small">Belum ada daftar nama di tim ini.</div>`;
+            btnSubmit.disabled = true;
+            return;
+        }
+
+        // Aktifkan tombol submit karena data anggota sudah siap
+        btnSubmit.disabled = false;
+
+        // Loop array nama dan buatkan element row otomatis
+        dataAnggota[namaTim].forEach((nama, index) => {
+            const html = `
+                <div class="anggota-row">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-7 col-sm-8">
+                            <span class="nama-label d-block text-truncate">${index + 1}. ${nama}</span>
+                            <input type="hidden" class="input-nama" value="${nama}">
+                        </div>
+                        <div class="col-5 col-sm-4">
+                            <select class="form-select form-select-sm input-status">
+                                <option value="Hadir" selected>Hadir</option>
+                                <option value="Izin">Izin</option>
+                                <option value="Sakit">Sakit</option>
+                                <option value="Absen">Absen</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-        document.getElementById('wrapperAnggota').insertAdjacentHTML('beforeend', html);
+            `;
+            wrapper.insertAdjacentHTML('beforeend', html);
+        });
     }
-
-    function hapusBarisAnggota(idRow) {
-        document.getElementById(`row-${idRow}`).remove();
-    }
-
-    // Buat satu baris pertama saat halaman dibuka
-    tambahBarisAnggota();
-
-    document.getElementById('btnTambahAnggota').addEventListener('click', tambahBarisAnggota);
 
     // Proses Pengiriman Batch ke Firebase
     document.getElementById('formLapor').addEventListener('submit', async (e) => {
@@ -255,10 +264,6 @@
         const jam = document.getElementById('jam').value;
 
         const rows = document.querySelectorAll('.anggota-row');
-        if(rows.length === 0) {
-            alert("Harap masukkan minimal 1 nama anggota!");
-            return;
-        }
 
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses Laporan Tim...';
         btn.disabled = true;
@@ -272,13 +277,15 @@
                 const uploadResponse = await fetch(appsScriptUrl, {
                     method: "POST",
                     body: JSON.stringify({
-                        nama_sekolah: `Tim_${tim}_Kegiatan`,
-                        gambar: gambarTimBase64
+                        divisi: tim,
+                        image: gambarTimBase64
                     })
                 });
                 const uploadResult = await uploadResponse.json();
                 if (uploadResult.status === "success") {
                     urlFotoDrive = uploadResult.url;
+                } else {
+                    console.error("Gagal Upload Drive: " + uploadResult.message);
                 }
             }
 
@@ -287,7 +294,7 @@
             btn.innerHTML = '<i class="fa-solid fa-database me-1"></i> Menyimpan ke Database Admin...';
 
             rows.forEach(row => {
-                const nama = row.querySelector('.input-nama').value.trim();
+                const nama = row.querySelector('.input-nama').value;
                 const status = row.querySelector('.input-status').value;
 
                 // Membuat ID dokumen unik berdasarkan Kombinasi Tim dan Nama Anggota
