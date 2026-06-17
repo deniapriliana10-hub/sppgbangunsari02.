@@ -1,57 +1,47 @@
-<div class="card card-custom p-4 bg-white mb-4">
-    <h4 class="fw-bold text-dark mb-3">🚚 Monitoring Pengiriman (Driver)</h4>
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead><tr><th>Sekolah</th><th>Status</th><th>Bukti Foto</th></tr></thead>
-            <tbody id="monitoringDriverBody"></tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card card-custom p-4 bg-white">
-    <h4 class="fw-bold text-dark mb-3">⚙️ Monitoring Alur Kerja Divisi</h4>
+<div class="card p-4 mb-4 shadow-sm border-0">
+    <h4 class="fw-bold text-primary">🛡️ Tim Persiapan</h4>
     <div class="table-responsive">
         <table class="table table-bordered">
             <thead class="table-light">
-                <tr>
-                    <th>Sekolah</th>
-                    <th>Persiapan</th>
-                    <th>Cuci Ompreng</th>
-                    <th>Pengolahan</th>
-                    <th>Pemorsian</th>
-                </tr>
+                <tr><th>Nama Anggota</th><th>Jam Masuk</th><th>Status</th><th>Jam Pulang</th><th>Foto Kegiatan</th></tr>
             </thead>
-            <tbody id="monitoringDivisiBody"></tbody>
+            <tbody id="divisiPersiapanBody">
+                </tbody>
         </table>
     </div>
-    <button class="btn btn-danger w-100 mt-4" id="btnResetStatus">🔄 RESET SEMUA DATA (PENGIRIMAN & DIVISI)</button>
+</div>
+
+<div class="card p-4 mb-4 shadow-sm border-0">
+    <h4 class="fw-bold text-success">🍳 Tim Pengolahan</h4>
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <tbody id="divisiPengolahanBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card p-4 bg-dark text-white shadow-sm">
+    <h4 class="fw-bold">🚚 Status Pengiriman Sekolah</h4>
+    <table class="table table-dark table-hover">
+        <thead><tr><th>Sekolah</th><th>Status</th><th>Bukti</th></tr></thead>
+        <tbody id="monitoringTableBody"></tbody>
+    </table>
+    <button class="btn btn-danger w-100" id="btnResetStatus">🔄 RESET SEMUA DATA (HARI INI)</button>
 </div>
 
 <script>
-    db.collection("sekolah_list").onSnapshot((snapshot) => {
-        const driverBody = document.getElementById('monitoringDriverBody');
-        const divisiBody = document.getElementById('monitoringDivisiBody');
-        
-        driverBody.innerHTML = "";
-        divisiBody.innerHTML = "";
-
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            
-            // Mengisi Tabel Pengiriman (Driver)
-            driverBody.innerHTML += `<tr>
-                <td>${data.nama}</td>
-                <td><span class="badge ${data.status === 'Sudah Sampai' ? 'bg-success' : 'bg-warning'}">${data.status}</span></td>
-                <td>${data.foto_bukti ? `<a href="${data.foto_bukti}" target="_blank" class="btn btn-sm btn-info">📷 Lihat</a>` : '-'}</td>
-            </tr>`;
-
-            // Mengisi Tabel Divisi (Persiapan, Cuci, dll)
-            divisiBody.innerHTML += `<tr>
-                <td class="fw-bold">${data.nama}</td>
-                <td>${data.waktu_persiapan || '-'}</td>
-                <td>${data.waktu_cuci || '-'}</td>
-                <td>${data.waktu_pengolahan || '-'}</td>
-                <td>${data.waktu_pemorsian || '-'}</td>
+    // Contoh pengambilan data per divisi
+    db.collection("divisi_status").where("nama_divisi", "==", "Persiapan").onSnapshot(snapshot => {
+        const body = document.getElementById('divisiPersiapanBody');
+        body.innerHTML = "";
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            body.innerHTML += `<tr>
+                <td>${d.nama_anggota || '-'}</td>
+                <td>${d.jam_masuk || '-'}</td>
+                <td><span class="badge ${d.status === 'Hadir' ? 'bg-success' : 'bg-danger'}">${d.status}</span></td>
+                <td>${d.jam_pulang || '-'}</td>
+                <td>${d.foto_kegiatan ? `<a href="${d.foto_kegiatan}" target="_blank">Lihat</a>` : '-'}</td>
             </tr>`;
         });
     });
