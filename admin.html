@@ -50,7 +50,6 @@
         .section-icon { margin-right: 10px; color: var(--neon-lime); }
         .table-distribusi { background-color: #000; border-radius: 10px; overflow: hidden; }
 
-        /* Style Baru Box Input Tautan Link Foto */
         .photo-slot-box {
             background: rgba(255,255,255,0.03); 
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -187,7 +186,7 @@
         </div>
         <div class="mt-4 p-2">
             <button class="btn btn-danger w-100 fw-bold py-3" id="btnResetAll" style="border-radius: 12px;">
-                <i class="fa-solid fa-rotate"></i> RESET STATUS HARI INI
+                <i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI
             </button>
         </div>
     </div>
@@ -210,9 +209,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // -------------------------------------------------------------------------
-    // RENDER FOTO AKTIF DARI FIRESTORE KE FORM & KOLOM INPUT ADMIN (Real-Time)
-    // -------------------------------------------------------------------------
+    // RENDER FOTO AKTIF DARI FIRESTORE KE FORM & KOLOM INPUT ADMIN
     db.collection("galeri_data").doc("sppg_photos").onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
@@ -231,9 +228,7 @@
         }
     });
 
-    // -------------------------------------------------------------------------
-    // FUNGSI AKSI: MENYIMPAN INPUTAN TEKS URL LINK KE DATABASE FIRESTORE
-    // -------------------------------------------------------------------------
+    // FUNGSI AKSI SIMPAN URL LINK FOTO
     async function updateLinkFoto(slotFoto) {
         const urlInput = document.getElementById(`input-link-foto${slotFoto.slice(-1)}`).value.trim();
         
@@ -243,18 +238,16 @@
         }
 
         try {
-            // Langsung daftarkan atau perbarui link string di Firestore dokumengaleri utama
             await db.collection("galeri_data").doc("sppg_photos").set({
                 [slotFoto]: urlInput
             }, { merge: true });
 
             alert(`Sukses! Tautan Link Foto ${slotFoto.slice(-1)} berhasil diterapkan.`);
         } catch (error) {
-            console.error("Terjadi kegagalan penulisan database: ", error);
+            console.error(error);
             alert("Gagal mengubah foto: " + error.message);
         }
     }
-    // -------------------------------------------------------------------------
 
     // Fungsi untuk merender tabel divisi
     function renderDivisi(namaDivisi, tableId) {
@@ -301,25 +294,25 @@
         });
     });
 
-    // Tombol Reset Data
+    // =========================================================================
+    // TOMBOL RESET DATA: HAPUS NAMA ANGGOTA & UPDATE STATUS LOGISTIK SEKOLAH
+    // =========================================================================
     document.getElementById('btnResetAll').addEventListener('click', function() {
-        if (confirm("Apakah Anda yakin ingin mereset status operasional hari ini ke awal?")) {
+        if (confirm("Apakah Anda yakin ingin mereset operasional hari ini?\n\n- Semua Nama Anggota Divisi akan DIHAPUS BERSIH.\n- Status Pengiriman Sekolah akan DI-UPDATE ke 'Dalam Perjalanan' (Data sekolah tidak hilang).")) {
             const btn = document.getElementById('btnResetAll');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang Memproses...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang Memproses Data...';
             btn.disabled = true;
 
             const batch = db.batch();
 
+            // 1. Ambil seluruh data absensi divisi, lalu hapus dokumennya agar nama hilang total dari tabel
             db.collection("divisi_status").get().then(snapshot => {
                 snapshot.forEach(doc => {
                     const docRef = db.collection("divisi_status").doc(doc.id);
-                    batch.update(docRef, {
-                        jam_masuk: "",
-                        jam_pulang: "",
-                        status: "Absen",
-                        foto_kegiatan: ""
-                    });
+                    batch.delete(docRef); // Menghapus total baris nama anggota
                 });
+
+                // 2. Ambil data sekolah_list, tapi HANYA di-update statusnya saja (Aman, data sekolah tetap utuh)
                 return db.collection("sekolah_list").get();
             }).then(snapshot => {
                 snapshot.forEach(doc => {
@@ -330,15 +323,17 @@
                         foto_bukti: ""
                     });
                 });
+
+                // Eksekusi semua perubahan ke Firebase secara serentak
                 return batch.commit();
             }).then(() => {
-                alert("Status berhasil dikembalikan ke posisi awal!");
-                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET SEMUA DATA HARI INI';
+                alert("Berhasil! Data nama anggota divisi dibersihkan dan status logistik sekolah dikembalikan ke 'Dalam Perjalanan'.");
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI';
                 btn.disabled = false;
             }).catch(error => {
-                console.error("Gagal melakukan reset: ", error);
-                alert("Terjadi kesalahan saat memproses data: " + error.message);
-                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET SEMUA DATA HARI INI';
+                console.error("Gagal melakukan proses reset: ", error);
+                alert("Terjadi kesalahan sistem: " + error.message);
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI';
                 btn.disabled = false;
             });
         }
