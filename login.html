@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SPPG BANGUNSARI 02</title>
+    <title>Login Sistem - SPPG BANGUNSARI 02</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
@@ -43,20 +43,20 @@
         <div class="col-md-5">
             <div class="card card-login p-5">
                 <div class="text-center mb-4">
-                    <h3 class="fw-bold text-primary">LOGIN SPPG</h3>
-                    <p class="text-muted">Masuk menggunakan akun Firebase</p>
+                    <h3 class="fw-bold text-primary">PORTAL LOGIN</h3>
+                    <p class="text-muted">Satu pintu untuk Admin & Driver</p>
                 </div>
                 
                 <form id="loginForm">
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
+                        <label for="email" class="form-label">Email Akun</label>
                         <input type="email" class="form-control" id="email" required placeholder="nama@email.com">
                     </div>
                     <div class="mb-4">
                         <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control" id="password" required placeholder="Masukkan password">
                     </div>
-                    <button type="submit" class="btn btn-login w-100 py-2 mb-3">Masuk</button>
+                    <button type="submit" class="btn btn-login w-100 py-2 mb-3">Masuk Ke Sistem</button>
                     <div class="text-center">
                         <a href="index.html" class="text-decoration-none text-muted small">← Kembali ke Beranda</a>
                     </div>
@@ -69,10 +69,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
+<script>
+    // Konfigurasi Firebase asli milikmu
     const firebaseConfig = {
         apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
         authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
@@ -83,28 +84,35 @@
         measurementId: "G-TE7G4NTT96"
     };
 
-    try {
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
 
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+    // Deteksi Submit Form
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value.toLowerCase(); // Ambil input email (kecilkan huruf)
+        const password = document.getElementById('password').value;
 
-            signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    alert("Login Berhasil! Selamat datang.");
-                    window.location.href = "admin.html";
-                })
-                .catch((error) => {
-                    alert("Gagal Login: " + error.message);
-                });
-        });
-    } catch (error) {
-        console.error("Firebase Gagal Load:", error);
-    }
+        // Proses autentikasi
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                
+                // LOGIKA PEMISAH RUTE (PINTU OTOMATIS)
+                // Cek apakah email yang login mengandung kata 'driver'
+                if (email.includes('driver')) {
+                    alert("Login Berhasil! Selamat datang Driver SPPG.");
+                    window.location.href = "driver.html"; // Lempar ke halaman driver
+                } else {
+                    alert("Login Berhasil! Selamat datang Admin SPPG.");
+                    window.location.href = "admin.html"; // Jika bukan driver, lempar ke halaman admin pusat
+                }
+
+            })
+            .catch((error) => {
+                alert("Gagal Login: " + error.message);
+            });
+    });
 </script>
 </body>
 </html>
