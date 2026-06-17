@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Executive Dashboard - SPPG Bangunsari 02</title>
@@ -184,11 +185,14 @@
                 <tbody id="sekolahTable"></tbody>
             </table>
         </div>
-        <div class="mt-4 p-2">
-            <button class="btn btn-danger w-100 fw-bold py-3" id="btnResetAll" style="border-radius: 12px;">
-                <i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI
-            </button>
-        </div>
+        <div class="mt-4 p-2 d-flex gap-2">
+    <button class="btn btn-success w-50 fw-bold py-3" id="btnDownloadExcel" style="border-radius: 12px;">
+        <i class="fa-solid fa-file-excel"></i> UNDUH DATA EXCEL
+    </button>
+    <button class="btn btn-danger w-50 fw-bold py-3" id="btnResetAll" style="border-radius: 12px;">
+        <i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI
+    </button>
+</div>
     </div>
 </div>
 
