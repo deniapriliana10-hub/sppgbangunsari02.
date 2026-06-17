@@ -1,48 +1,32 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SPPG Bangunsari 02</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: #1e293b; padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); color: white; }
-    </style>
-</head>
-<body>
-
-<div class="login-card">
-    <h3 class="fw-bold mb-4 text-center">SPPG <span style="color: #deff9a;">LOGIN</span></h3>
-    <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input type="email" id="email" class="form-control" placeholder="user@sppg.com">
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input type="password" id="password" class="form-control" placeholder="******">
-    </div>
-    <button onclick="handleLogin()" class="btn w-100 fw-bold" style="background: #deff9a; border: none;">MASUK</button>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
+    // 1. Pastikan Config ini sudah diisi dengan data dari Project Settings Firebase Anda
     const firebaseConfig = {
-        // MASUKKAN KODE CONFIG FIREBASE KAMU DI SINI
+        apiKey: "AIzaSy...", 
+        authDomain: "...",
+        projectId: "...",
+        storageBucket: "...",
+        messagingSenderId: "...",
+        appId: "..."
     };
-    firebase.initializeApp(firebaseConfig);
 
+    // 2. Inisialisasi Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+
+    // 3. Fungsi Login
     function handleLogin() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
 
+        console.log("Mencoba login dengan:", email); // Ini akan muncul di Console (F12)
+
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                const user = userCredential.user;
-                // Jika email adalah admin, ke admin.html, jika bukan ke lapor.html
+                console.log("Login sukses!");
                 if (email === "admin@sppg.com") {
                     window.location.href = "admin.html";
                 } else {
@@ -50,9 +34,8 @@
                 }
             })
             .catch((error) => {
+                console.error("Error Detail:", error.code, error.message);
                 alert("Login Gagal: " + error.message);
             });
     }
 </script>
-</body>
-</html>
