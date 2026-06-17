@@ -184,11 +184,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ⚠️ SILAKAN MASUKKAN LINK WEB APP GOOGLE APPS SCRIPT ANDA YANG BARU DI SINI
+    // ⚠️ SILAKAN GANTI DENGAN LINK WEB APP GOOGLE APPS SCRIPT JIKA ADA PEMBARUAN BARU
     const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwdCqsYFa9PGX3_L4tkBVDpYHCoGPzY2QnvIldHEWTk4Z1qpkOJ2g7A1C_iqF1wih73pw/exec";
     
     // =========================================================================
-    // DATABASE DATA NAMA ANGGOTA TIAP DIVISI (Silakan edit/tambah di sini)
+    // DATABASE DATA NAMA ANGGOTA TIAP DIVISI (Silakan edit/sesuaikan nama di bawah ini)
     // =========================================================================
     const dataAnggota = {
         "Persiapan": ["Ahmad Fauzi", "Budi Santoso", "Citra Lestari", "Dani Setiawan"],
@@ -274,6 +274,7 @@
             // 1. Upload foto tim sekali saja (jika ada) ke Google Drive via Apps Script
             if (gambarTimBase64) {
                 btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce me-1"></i> Mengunggah Foto Kegiatan Tim...';
+                
                 const uploadResponse = await fetch(appsScriptUrl, {
                     method: "POST",
                     body: JSON.stringify({
@@ -281,6 +282,7 @@
                         image: gambarTimBase64
                     })
                 });
+                
                 const uploadResult = await uploadResponse.json();
                 if (uploadResult.status === "success") {
                     urlFotoDrive = uploadResult.url;
