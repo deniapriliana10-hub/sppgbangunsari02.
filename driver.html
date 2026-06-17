@@ -6,79 +6,36 @@
     <title>Driver Panel - SPPG BANGUNSARI 02</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { 
-            background-color: #f4f7f5; 
-            font-family: Arial, sans-serif;
-        }
-        .navbar-driver { 
-            background: #2E7D32; /* Warna hijau khas logistik/kurir */
-        } 
-        .card-custom { 
-            border: none; 
-            border-radius: 15px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
-        }
-        .card-sekolah {
-            border-left: 5px solid #ffc107;
-            transition: 0.3s;
-        }
-        .card-sekolah.terkirim {
-            border-left: 5px solid #2e7d32;
-        }
+        body { background-color: #f8f9fa; }
+        .navbar-driver { background: linear-gradient(90deg, #1E88E5, #1565C0); }
+        .card-sekolah { border: none; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: 0.3s; }
+        .preview-img { max-height: 150px; display: none; border-radius: 10px; margin-top: 10px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark navbar-driver mb-4">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-driver mb-4">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="#">🚚 SPPG Driver Portal</a>
-        <button class="btn btn-outline-light btn-sm d-none" id="btnDriverLogout">Keluar</button>
+        <a class="navbar-brand fw-bold" href="#">🚚 Kurir Lapangan SPPG</a>
+        <button class="btn btn-light btn-sm ms-auto" id="btnLogout">Logout</button>
     </div>
 </nav>
 
 <div class="container pb-5">
-    
-    <div id="driverLoginSection" class="row justify-content-center my-5">
-        <div class="col-md-5">
-            <div class="card card-custom p-4 bg-white">
-                <div class="text-center mb-4">
-                    <h4 class="fw-bold text-success">LOGIN DRIVER</h4>
-                    <p class="text-muted small">Masuk untuk memulai laporan pengiriman</p>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h4 class="fw-bold text-secondary mb-3">Daftar Pengiriman Hari Ini</h4>
+            <p class="text-muted small">Silakan ambil foto bukti di lokasi sekolah tujuan sebelum melakukan konfirmasi selesai.</p>
+            <hr>
+
+            <div id="daftarSekolahDriver" class="row g-3">
+                <div class="col-12 text-center text-muted py-4">
+                    Menghubungkan ke satelit logistik...
                 </div>
-                <form id="driverLoginForm">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Email Driver</label>
-                        <input type="email" id="driverEmail" class="form-control" required placeholder="driver@sppg.com">
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold">Password</label>
-                        <input type="password" id="driverPassword" class="form-control" required placeholder="******">
-                    </div>
-                    <button type="submit" class="btn btn-success w-100 fw-bold py-2">Masuk Sistem</button>
-                    <div class="text-center mt-3">
-                        <a href="index.html" class="text-decoration-none text-muted small">← Kembali ke Beranda</a>
-                    </div>
-                </form>
             </div>
+
         </div>
     </div>
-
-    <div id="driverMainPanel" class="row g-3 d-none">
-        <div class="col-12 mb-2">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="fw-bold text-dark mb-0">Daftar Pengiriman</h4>
-                    <p class="text-muted small mb-0" id="welcomeDriverText">Halo Driver,</p>
-                </div>
-                <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">🔄 Segarkan</button>
-            </div>
-        </div>
-        
-        <div id="listSekolahContainer" class="col-12">
-            <div class="text-center py-5 text-muted">Memuat data sekolah...</div>
-        </div>
-    </div>
-
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -98,107 +55,138 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
 
-    // PROSES: Aksi Form Login Driver
-    document.getElementById('driverLoginForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const email = document.getElementById('driverEmail').value;
-        const password = document.getElementById('driverPassword').value;
+    // URL Apps Script Jembatan Google Drive milikmu
+    const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwLgcPFVU_7uYLiTUbdld7CtvRcCeg576olUz2UaWgogkaPEfasL5BdJGsuTv7WX3Bg/exec";
 
-        auth.signInWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                alert("Login Driver Berhasil!");
-                bukaPanelDriver(userCredential.user.email);
-            })
-            .catch((error) => {
-                alert("Gagal Masuk: Akun driver tidak terdaftar atau password salah.");
-            });
-    });
+    // Penampung data gambar sementara sebelum dikirim
+    let gambarBase64Temp = {};
 
-    // PROSES: Deteksi apakah akun Driver sudah login sebelumnya
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            bukaPanelDriver(user.email);
-        } else {
-            // Tampilkan login jika belum masuk
-            document.getElementById('driverLoginSection').classList.remove('d-none');
-            document.getElementById('driverMainPanel').classList.add('d-none');
-            document.getElementById('btnDriverLogout').classList.add('d-none');
+    // Ambil daftar sekolah secara Real-time dari Firebase
+    db.collection("sekolah_list").onSnapshot((querySnapshot) => {
+        const container = document.getElementById('daftarSekolahDriver');
+        container.innerHTML = "";
+
+        if (querySnapshot.empty) {
+            container.innerHTML = `<div class="col-12 text-center text-muted py-3">Belum ada tugas pengiriman sekolah hari ini.</div>`;
+            return;
         }
-    });
 
-    // PROSES: Fungsi Membuka Daftar Sekolah
-    function bukaPanelDriver(emailDriver) {
-        document.getElementById('driverLoginSection').classList.add('d-none');
-        document.getElementById('driverMainPanel').classList.remove('d-none');
-        document.getElementById('btnDriverLogout').classList.remove('d-none');
-        document.getElementById('welcomeDriverText').innerText = `Petugas: ${emailDriver}`;
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const idDoc = doc.id;
 
-        // Ambil Data Sekolah secara Real-time
-        db.collection("sekolah_list").onSnapshot((querySnapshot) => {
-            const container = document.getElementById('listSekolahContainer');
-            container.innerHTML = ""; 
+            let bagianAksi = "";
 
-            if(querySnapshot.empty) {
-                container.innerHTML = `<div class="card card-custom p-4 text-center text-muted">Belum ada daftar sekolah pengiriman hari ini.</div>`;
-                return;
-            }
-
-            querySnapshot.forEach((doc) => {
-                const idDoc = doc.id;
-                const data = doc.data();
-                
-                let buttonStyle = "btn-success";
-                let btnText = "Konfirmasi Sampai";
-                let statusBadge = `<span class="badge bg-warning text-dark">Dalam Perjalanan</span>`;
-                let statusClass = "";
-                
-                if (data.status === "Sudah Sampai") {
-                    buttonStyle = "btn-secondary disabled";
-                    btnText = "✓ Sukses";
-                    statusBadge = `<span class="badge bg-success">Sudah Sampai</span>`;
-                    statusClass = "terkirim";
-                }
-
-                const cardHTML = `
-                    <div class="card card-custom card-sekolah ${statusClass} p-3 bg-white mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h5 class="fw-bold mb-1 text-dark">${data.nama}</h5>
-                                ${statusBadge}
-                            </div>
-                            <button onclick="updateStatusSampai('${idDoc}')" class="btn ${buttonStyle} btn-sm fw-bold px-3">
-                                ${btnText}
-                            </button>
-                        </div>
+            // Jika status masih dalam perjalanan, tampilkan tombol upload & konfirmasi
+            if (data.status !== "Sudah Sampai") {
+                bagianAksi = `
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-muted">Ambil Foto Bukti Serah Terima:</label>
+                        <input type="file" accept="image/*" capture="environment" onchange="prosesGambar(this, '${idDoc}')" class="form-control form-control-sm">
+                        <img id="prev-${idDoc}" class="preview-img img-fluid">
+                    </div>
+                    <button class="btn btn-success w-100 fw-bold" id="btn-${idDoc}" onclick="updateStatusSampai('${idDoc}')">
+                        ✓ Konfirmasi Sampai
+                    </button>
+                `;
+            } else {
+                // Jika sudah sampai, kunci tombolnya agar driver tidak salah pencet lagi
+                bagianAksi = `
+                    <div class="alert alert-success text-center mb-0 fw-bold rounded-3 py-2">
+                        ✓ Selesai Terkirim
                     </div>
                 `;
-                container.innerHTML += cardHTML;
-            });
+            }
+
+            const cardHTML = `
+                <div class="col-12">
+                    <div class="card card-sekolah p-4 bg-white">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0 text-dark">${data.nama || "Nama Sekolah"}</h5>
+                            <span class="badge ${data.status === 'Sudah Sampai' ? 'bg-success' : 'bg-warning text-dark'} px-3 py-2 rounded-pill small">
+                                ${data.status || 'Dalam Perjalanan'}
+                            </span>
+                        </div>
+                        <hr class="mt-0">
+                        ${bagianAksi}
+                    </div>
+                </div>
+            `;
+            container.innerHTML += cardHTML;
         });
+    });
+
+    // Fungsi memproses kamera/file foto dan mengubahnya ke Base64 (Teks) sementara
+    function prosesGambar(input, idDoc) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                gambarBase64Temp[idDoc] = e.target.result; // Simpan di memori sementara
+                const preview = document.getElementById(`prev-${idDoc}`);
+                preview.src = e.target.result;
+                preview.style.display = "block"; // Munculkan preview foto di layar driver
+            }
+            reader.readAsDataURL(file);
+        }
     }
 
-    // PROSES: Mengirim update status "Sudah Sampai" ke Firebase
+    // Fungsi mengirim gambar ke Google Drive lalu update status di Firebase
     function updateStatusSampai(idDokumen) {
+        if (!gambarBase64Temp[idDokumen]) {
+            alert("Wajib mengambil atau mengunggah foto bukti kiriman terlebih dahulu!");
+            return;
+        }
+
         if(confirm("Konfirmasi bahwa paket makanan telah tiba di lokasi sekolah tujuan?")) {
-            db.collection("sekolah_list").doc(idDokumen).update({
-                status: "Sudah Sampai"
-            }).then(() => {
-                alert("Laporan terkirim! Status di monitor utama otomatis berubah.");
-            }).catch((err) => {
-                alert("Gagal mengirim laporan: " + err.message);
+            const btn = document.getElementById(`btn-${idDokumen}`);
+            const teksAwal = btn.innerText;
+            
+            btn.innerText = "⏳ Mengunggah ke Google Drive...";
+            btn.classList.add("disabled");
+
+            // Ambil nama sekolah untuk nama file gambar di Drive nanti
+            db.collection("sekolah_list").doc(idDokumen).get().then((docSnap) => {
+                const namaSekolah = docSnap.data().nama || "Sekolah";
+
+                // Tembak data gambar ke Google Apps Script Jembatan Drive
+                return fetch(appsScriptUrl, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        nama_sekolah: namaSekolah,
+                        gambar: gambarBase64Temp[idDokumen]
+                    })
+                });
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === "success") {
+                    // Jika sukses tersimpan di Google Drive, simpan LINK URL Drive-nya ke Firebase
+                    return db.collection("sekolah_list").doc(idDokumen).update({
+                        status: "Sudah Sampai",
+                        foto_bukti: result.url 
+                    });
+                } else {
+                    throw new Error(result.message);
+                }
+            })
+            .then(() => {
+                alert("Laporan sukses dikirim! Foto tersimpan aman di Google Drive Admin.");
+            })
+            .catch((err) => {
+                alert("Gagal memproses laporan: " + err.message);
+                btn.innerText = teksAwal;
+                btn.classList.remove("disabled");
             });
         }
     }
 
-    // PROSES: Aksi Logout Driver
-    document.getElementById('btnDriverLogout').addEventListener('click', function() {
-        auth.signOut().then(() => {
-            alert("Berhasil keluar.");
-            location.reload();
-        });
+    // Fungsi Logout Driver
+    document.getElementById('btnLogout').addEventListener('click', function() {
+        firebase.auth().signOut().then(() => { window.location.href = "login.html"; });
     });
 </script>
+
 </body>
 </html>
