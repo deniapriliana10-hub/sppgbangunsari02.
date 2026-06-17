@@ -118,7 +118,7 @@
         </div>
         <div class="mt-4 p-2">
             <button class="btn btn-danger w-100 fw-bold py-3" id="btnResetAll" style="border-radius: 12px;">
-                <i class="fa-solid fa-rotate"></i> RESET SEMUA DATA HARI INI
+                <i class="fa-solid fa-rotate"></i> RESET STATUS HARI INI
             </button>
         </div>
     </div>
@@ -128,7 +128,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
-    // MASUKKAN CONFIG FIREBASE KAMU DI SINI
     const firebaseConfig = {
         apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
         authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
@@ -187,11 +186,51 @@
         });
     });
 
-    // Tombol Reset Data
+    // Tombol Reset Data (Mengubah Status, Bukan Menghapus Dokumen)
     document.getElementById('btnResetAll').addEventListener('click', function() {
-        if (confirm("Apakah Anda yakin ingin menghapus semua laporan hari ini dan memulai baru?")) {
-            // Logika reset bisa ditambahkan di sini (menghapus jam & status di Firebase)
-            alert("Data sedang di-reset...");
+        if (confirm("Apakah Anda yakin ingin mereset status operasional hari ini ke awal?")) {
+            const btn = document.getElementById('btnResetAll');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang Memproses...';
+            btn.disabled = true;
+
+            const batch = db.batch();
+
+            // 1. Reset data divisi_status (Kosongkan jam, kembalikan status ke 'Absen', hapus link foto jika ada)
+            db.collection("divisi_status").get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const docRef = db.collection("divisi_status").doc(doc.id);
+                    batch.update(docRef, {
+                        jam_masuk: "",
+                        jam_pulang: "",
+                        status: "Absen",
+                        foto_kegiatan: ""
+                    });
+                });
+
+                // 2. Reset data sekolah_list (Ubah status ke 'Dalam Perjalanan', kosongkan waktu tiba & foto bukti)
+                return db.collection("sekolah_list").get();
+            }).then(snapshot => {
+                snapshot.forEach(doc => {
+                    const docRef = db.collection("sekolah_list").doc(doc.id);
+                    batch.update(docRef, {
+                        status: "Dalam Perjalanan",
+                        waktu_tiba: "",
+                        foto_bukti: ""
+                    });
+                });
+
+                // Eksekusi semua perubahan sekaligus
+                return batch.commit();
+            }).then(() => {
+                alert("Status berhasil dikembalikan ke posisi awal!");
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET SEMUA DATA HARI INI';
+                btn.disabled = false;
+            }).catch(error => {
+                console.error("Gagal melakukan reset: ", error);
+                alert("Terjadi kesalahan saat memproses data: " + error.message);
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET SEMUA DATA HARI INI';
+                btn.disabled = false;
+            });
         }
     });
 </script>
