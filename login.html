@@ -1,54 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
     <title>Login - SPPG Bangunsari 02</title>
 </head>
 <body>
     <div style="text-align: center; margin-top: 50px;">
-        <h2>Login Sistem</h2>
-        <input type="email" id="email" placeholder="Email"><br>
+        <h3>SPPG Login</h3>
+        <input type="email" id="email" placeholder="Email"><br><br>
         <input type="password" id="pass" placeholder="Password"><br><br>
         <button id="btnMasuk">MASUK</button>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script type="module">
+        // Import dari CDN Firebase yang kompatibel
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <script>
+        // Konfigurasi Anda
         const firebaseConfig = {
             apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
             authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
             projectId: "sppgbangunsari02-b5cb1",
             storageBucket: "sppgbangunsari02-b5cb1.firebasestorage.app",
             messagingSenderId: "497486447370",
-            appId: "1:497486447370:web:0b2b6ce4297b48d18b70f3"
+            appId: "1:497486447370:web:0b2b6ce4297b48d18b70f3",
+            measurementId: "G-TE7G4NTT96"
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
 
-        document.getElementById("btnMasuk").addEventListener("click", () => {
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        document.getElementById("btnMasuk").addEventListener("click", async () => {
             const email = document.getElementById("email").value;
             const pass = document.getElementById("pass").value;
 
-            firebase.auth().signInWithEmailAndPassword(email, pass)
-            .then((userCredential) => {
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
+
                 // Ambil role dari Firestore
-                db.collection("users").doc(userCredential.user.uid).get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        const role = doc.data().role;
-                        if (role === "admin") window.location.href = "admin.html";
-                        else if (role === "driver") window.location.href = "driver.html";
-                        else window.location.href = "lapor.html";
-                    } else {
-                        alert("User tidak terdaftar di database!");
-                    }
-                });
-            })
-            .catch((error) => {
+                const docRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const role = docSnap.data().role;
+                    if (role === "admin") window.location.href = "admin.html";
+                    else if (role === "driver") window.location.href = "driver.html";
+                    else window.location.href = "lapor.html";
+                } else {
+                    alert("Akun belum memiliki Role di Database!");
+                }
+            } catch (error) {
                 alert("Login Gagal: " + error.message);
-            });
+            }
         });
     </script>
 </body>
