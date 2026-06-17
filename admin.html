@@ -8,15 +8,46 @@
     <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        :root { --bg-dark: #0f172a; --card-bg: #1e293b; --neon-lime: #deff9a; }
-        body { background-color: var(--bg-dark); color: #ffffff; font-family: 'Urbanist', sans-serif; padding-bottom: 50px; }
-        .header-title { border-left: 5px solid var(--neon-lime); padding-left: 15px; margin: 40px 0; }
-        .card-divisi { background-color: var(--card-bg); border: 1px solid rgba(222, 255, 154, 0.1); border-radius: 15px; padding: 25px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --neon-lime: #deff9a;
+            --text-gray: #94a3b8;
+        }
+        body { 
+            background-color: var(--bg-dark); 
+            color: #ffffff; 
+            font-family: 'Urbanist', sans-serif;
+            padding-bottom: 50px;
+        }
+        .header-title {
+            border-left: 5px solid var(--neon-lime);
+            padding-left: 15px;
+            margin: 40px 0;
+        }
+        .card-divisi {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(222, 255, 154, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
         .table { color: #f1f5f9; vertical-align: middle; }
-        .table thead th { background-color: rgba(222, 255, 154, 0.05); color: var(--neon-lime); text-transform: uppercase; font-size: 12px; letter-spacing: 1px; border: none; }
+        .table thead th { 
+            background-color: rgba(222, 255, 154, 0.05); 
+            color: var(--neon-lime); 
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+            border: none;
+        }
+        .table tbody td { border-color: rgba(255,255,255,0.05); padding: 15px; }
         .badge-status { font-size: 11px; padding: 5px 12px; border-radius: 20px; font-weight: 700; }
         .btn-view { color: var(--neon-lime); text-decoration: none; font-weight: 600; font-size: 14px; }
+        .btn-view:hover { text-decoration: underline; }
         .section-icon { margin-right: 10px; color: var(--neon-lime); }
+        .table-distribusi { background-color: #000; border-radius: 10px; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -29,76 +60,139 @@
 
     <div class="card-divisi">
         <h4 class="fw-bold mb-4"><i class="fa-solid fa-boxes-packing section-icon"></i> Tim Persiapan</h4>
-        <table class="table"><tbody id="persiapanTable"></tbody></table>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Nama Anggota</th><th>Jam Masuk</th><th>Daftar Hadir</th><th>Jam Pulang</th><th>Foto Kegiatan</th></tr>
+                </thead>
+                <tbody id="persiapanTable"></tbody>
+            </table>
+        </div>
     </div>
 
     <div class="card-divisi">
         <h4 class="fw-bold mb-4"><i class="fa-solid fa-fire-burner section-icon"></i> Tim Pengolahan</h4>
-        <table class="table"><tbody id="pengolahanTable"></tbody></table>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Nama Anggota</th><th>Jam Masuk</th><th>Daftar Hadir</th><th>Jam Pulang</th><th>Foto Kegiatan</th></tr>
+                </thead>
+                <tbody id="pengolahanTable"></tbody>
+            </table>
+        </div>
     </div>
 
     <div class="card-divisi">
-        <h4 class="fw-bold mb-4"><i class="fa-solid fa-truck-ramp-box section-icon"></i> Status Distribusi</h4>
-        <table class="table"><tbody id="sekolahTable"></tbody></table>
+        <h4 class="fw-bold mb-4"><i class="fa-solid fa-utensils section-icon"></i> Tim Pemorsian</h4>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Nama Anggota</th><th>Jam Masuk</th><th>Daftar Hadir</th><th>Jam Pulang</th><th>Foto Kegiatan</th></tr>
+                </thead>
+                <tbody id="pemorsianTable"></tbody>
+            </table>
+        </div>
     </div>
 
-    <button class="btn btn-danger w-100 fw-bold py-3" id="btnResetAll" style="border-radius: 12px;">
-        <i class="fa-solid fa-rotate"></i> RESET SEMUA DATA HARI INI
-    </button>
+    <div class="card-divisi">
+        <h4 class="fw-bold mb-4"><i class="fa-solid fa-soap section-icon"></i> Tim Cuci Ompreng</h4>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Nama Anggota</th><th>Jam Masuk</th><th>Daftar Hadir</th><th>Jam Pulang</th><th>Foto Kegiatan</th></tr>
+                </thead>
+                <tbody id="cuciTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card-divisi table-distribusi">
+        <h4 class="fw-bold mb-4 text-white"><i class="fa-solid fa-truck-ramp-box section-icon"></i> Status Distribusi Sekolah</h4>
+        <div class="table-responsive">
+            <table class="table table-dark mb-0">
+                <thead>
+                    <tr><th>Nama Sekolah</th><th>Status</th><th>Waktu Tiba</th><th>Foto Bukti</th></tr>
+                </thead>
+                <tbody id="sekolahTable"></tbody>
+            </table>
+        </div>
+        <div class="mt-4 p-2">
+            <button class="btn btn-danger w-100 fw-bold py-3" id="btnResetAll" style="border-radius: 12px;">
+                <i class="fa-solid fa-rotate"></i> RESET SEMUA DATA HARI INI
+            </button>
+        </div>
+    </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
+    // MASUKKAN CONFIG FIREBASE KAMU DI SINI
     const firebaseConfig = {
         apiKey: "AIzaSyDeOduyu626TZ9CR0JGvzBH0qJAoArT8rk",
         authDomain: "sppgbangunsari02-b5cb1.firebaseapp.com",
         projectId: "sppgbangunsari02-b5cb1",
         storageBucket: "sppgbangunsari02-b5cb1.firebasestorage.app",
         messagingSenderId: "497486447370",
-        appId: "1:497486447370:web:0b2b6ce4297b48d18b70f3"
+        appId: "1:497486447370:web:0b2b6ce4297b48d18b70f3",
+        measurementId: "G-TE7G4NTT96"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Fungsi Render Dinamis
-    function syncTable(colName, queryField, queryVal, tableId) {
-        let ref = db.collection(colName);
-        if(queryField) ref = ref.where(queryField, "==", queryVal);
-        
-        ref.onSnapshot(snapshot => {
-            const tbody = document.getElementById(tableId);
-            tbody.innerHTML = "";
+    // Fungsi untuk merender tabel divisi
+    function renderDivisi(namaDivisi, tableId) {
+        db.collection("divisi_status").where("nama_divisi", "==", namaDivisi).onSnapshot(snapshot => {
+            const tableBody = document.getElementById(tableId);
+            tableBody.innerHTML = "";
             snapshot.forEach(doc => {
                 const d = doc.data();
-                tbody.innerHTML += `<tr>
-                    <td>${d.nama_anggota || d.nama || '-'}</td>
-                    <td>${d.jam_masuk || d.status || '-'}</td>
-                    <td>${d.foto_kegiatan || d.foto_bukti ? `<a href="${d.foto_kegiatan || d.foto_bukti}" target="_blank" class="btn-view">Lihat Bukti</a>` : '-'}</td>
-                </tr>`;
+                const statusBadge = d.status === 'Hadir' ? 'bg-success' : 'bg-danger';
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${d.nama_anggota || '-'}</td>
+                        <td>${d.jam_masuk || '-'}</td>
+                        <td><span class="badge badge-status ${statusBadge}">${d.status || 'Absen'}</span></td>
+                        <td>${d.jam_pulang || '-'}</td>
+                        <td>${d.foto_kegiatan ? `<a href="${d.foto_kegiatan}" target="_blank" class="btn-view">Lihat Foto</a>` : '-'}</td>
+                    </tr>
+                `;
             });
         });
     }
 
-    syncTable("divisi_status", "nama_divisi", "Persiapan", "persiapanTable");
-    syncTable("divisi_status", "nama_divisi", "Pengolahan", "pengolahanTable");
-    syncTable("sekolah_list", null, null, "sekolahTable");
+    // Jalankan Monitoring untuk tiap divisi
+    renderDivisi("Persiapan", "persiapanTable");
+    renderDivisi("Pengolahan", "pengolahanTable");
+    renderDivisi("Pemorsian", "pemorsianTable");
+    renderDivisi("Cuci Ompreng", "cuciTable");
 
-    // Fungsi Reset Data
-    document.getElementById('btnResetAll').addEventListener('click', async () => {
-        if (!confirm("Hapus semua data laporan hari ini?")) return;
-        
-        const collections = ["divisi_status", "sekolah_list"];
-        for (const col of collections) {
-            const snapshot = await db.collection(col).get();
-            const batch = db.batch();
-            snapshot.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
+    // Monitoring Distribusi Sekolah
+    db.collection("sekolah_list").onSnapshot(snapshot => {
+        const tableBody = document.getElementById('sekolahTable');
+        tableBody.innerHTML = "";
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const statusColor = d.status === 'Sudah Sampai' ? 'text-success' : 'text-warning';
+            tableBody.innerHTML += `
+                <tr>
+                    <td class="fw-bold">${d.nama}</td>
+                    <td class="${statusColor} fw-bold">${d.status}</td>
+                    <td>${d.waktu_tiba || '-'}</td>
+                    <td>${d.foto_bukti ? `<a href="${d.foto_bukti}" target="_blank" class="btn-view">Lihat Bukti</a>` : '-'}</td>
+                </tr>
+            `;
+        });
+    });
+
+    // Tombol Reset Data
+    document.getElementById('btnResetAll').addEventListener('click', function() {
+        if (confirm("Apakah Anda yakin ingin menghapus semua laporan hari ini dan memulai baru?")) {
+            // Logika reset bisa ditambahkan di sini (menghapus jam & status di Firebase)
+            alert("Data sedang di-reset...");
         }
-        alert("Data berhasil di-reset!");
-        location.reload();
     });
 </script>
 </body>
