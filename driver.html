@@ -121,10 +121,12 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT BARU ANDA YANG BERAKHIRAN /exec DI SINI
-    const appsScriptUrl = "TEMPEL_LINK_EXEC_BARU_ANDA_DI_SINI";
+    // ========================================================
+    // TEMPELKAN URL EXEC GOOGLE APPS SCRIPT BARU ANDA DI SINI
+    // ========================================================
+    const appsScriptUrl = "TEMPEL_URL_WEB_APP_EXEC_BARU_ANDA_DI_SINI";
+    
     let gambarBase64Temp = {};
-
     let prosesGambar;
     let updateStatusSampai;
 
@@ -138,7 +140,6 @@
     });
 
     function jalankanAplikasiLapor() {
-
         db.collection("sekolah_list").onSnapshot((querySnapshot) => {
             const container = document.getElementById('daftarSekolahDriver');
             container.innerHTML = "";
@@ -255,11 +256,12 @@
                 db.collection("sekolah_list").doc(idDokumen).get().then((docSnap) => {
                     const namaSekolah = docSnap.data().nama || "Sekolah";
 
+                    // PERBAIKAN: Menggunakan objek parameter 'divisi' dan 'image' agar sinkron dengan backend yang sukses
                     return fetch(appsScriptUrl, {
                         method: "POST",
                         body: JSON.stringify({
-                            nama_sekolah: namaSekolah,
-                            gambar: gambarBase64Temp[idDokumen]
+                            divisi: namaSekolah,
+                            image: gambarBase64Temp[idDokumen]
                         })
                     });
                 })
