@@ -200,6 +200,7 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -216,6 +217,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // VARIABEL GLOBAL AGAR BISA DIAKSES OLEH TOMBOL DI LUAR FUNGSI BUNGKUSAN
+    let updateLinkFoto;
+
     // ==========================================
     // 1. PROTEKSI UTAMA: CEK STATUS LOGIN DULU
     // ==========================================
@@ -231,218 +235,203 @@
     });
 
     // ==========================================
-    // 2. BUNGKUS SEMUA FUNGSI DATABASE DI SINI
+    // 2. BUNGKUS DATA UTAMA DI SINI
     // ==========================================
     function jalankanAplikasiAdmin() {
         
-        // Taruh semua kode penarik data database Anda di dalam sini, seperti:
-        // - db.collection("dashboard_data").onSnapshot...
-        // - db.collection("sekolah_list").onSnapshot...
-        // - Fungsi ekspor Excel, fungsi Reset, dll.
-        
-        console.log("Aplikasi Admin siap, data berhasil dimuat!");
-    }
-</script>
-    // RENDER FOTO AKTIF DARI FIRESTORE KE FORM & KOLOM INPUT ADMIN
-    db.collection("galeri_data").doc("sppg_photos").onSnapshot((doc) => {
-        if (doc.exists) {
-            const data = doc.data();
-            if (data.foto1) {
-                document.getElementById('preview-admin-foto1').src = data.foto1;
-                if(!document.getElementById('input-link-foto1').value) document.getElementById('input-link-foto1').value = data.foto1;
+        // RENDER FOTO AKTIF DARI FIRESTORE KE FORM & KOLOM INPUT ADMIN
+        db.collection("galeri_data").doc("sppg_photos").onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.foto1) {
+                    document.getElementById('preview-admin-foto1').src = data.foto1;
+                    if(!document.getElementById('input-link-foto1').value) document.getElementById('input-link-foto1').value = data.foto1;
+                }
+                if (data.foto2) {
+                    document.getElementById('preview-admin-foto2').src = data.foto2;
+                    if(!document.getElementById('input-link-foto2').value) document.getElementById('input-link-foto2').value = data.foto2;
+                }
+                if (data.foto3) {
+                    document.getElementById('preview-admin-foto3').src = data.foto3;
+                    if(!document.getElementById('input-link-foto3').value) document.getElementById('input-link-foto3').value = data.foto3;
+                }
             }
-            if (data.foto2) {
-                document.getElementById('preview-admin-foto2').src = data.foto2;
-                if(!document.getElementById('input-link-foto2').value) document.getElementById('input-link-foto2').value = data.foto2;
+        });
+
+        // FUNGSI AKSI SIMPAN URL LINK FOTO (DIDEFINISIKAN GLOBAL AGAR BISA ONCLICK HTML)
+        updateLinkFoto = async function(slotFoto) {
+            const urlInput = document.getElementById(`input-link-foto${slotFoto.slice(-1)}`).value.trim();
+            
+            if (!urlInput) {
+                alert("Harap masukkan link URL gambar terlebih dahulu!");
+                return;
             }
-            if (data.foto3) {
-                document.getElementById('preview-admin-foto3').src = data.foto3;
-                if(!document.getElementById('input-link-foto3').value) document.getElementById('input-link-foto3').value = data.foto3;
+
+            try {
+                await db.collection("galeri_data").doc("sppg_photos").set({
+                    [slotFoto]: urlInput
+                }, { merge: true });
+
+                alert(`Sukses! Tautan Link Foto ${slotFoto.slice(-1)} berhasil diterapkan.`);
+            } catch (error) {
+                console.error(error);
+                alert("Gagal mengubah foto: " + error.message);
             }
         }
-    });
 
-    // FUNGSI AKSI SIMPAN URL LINK FOTO
-    async function updateLinkFoto(slotFoto) {
-        const urlInput = document.getElementById(`input-link-foto${slotFoto.slice(-1)}`).value.trim();
-        
-        if (!urlInput) {
-            alert("Harap masukkan link URL gambar terlebih dahulu!");
-            return;
+        // Fungsi untuk merender tabel divisi
+        function renderDivisi(namaDivisi, tableId) {
+            db.collection("divisi_status").where("nama_divisi", "==", namaDivisi).onSnapshot(snapshot => {
+                const tableBody = document.getElementById(tableId);
+                tableBody.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    const statusBadge = d.status === 'Hadir' ? 'bg-success' : 'bg-danger';
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td>${d.nama_anggota || '-'}</td>
+                            <td>${d.jam_masuk || '-'}</td>
+                            <td><span class="badge badge-status ${statusBadge}">${d.status || 'Absen'}</span></td>
+                            <td>${d.jam_pulang || '-'}</td>
+                            <td>${d.foto_kegiatan ? `<a href="${d.foto_kegiatan}" target="_blank" class="btn-view">Lihat Foto</a>` : '-'}</td>
+                        </tr>
+                    `;
+                });
+            });
         }
 
-        try {
-            await db.collection("galeri_data").doc("sppg_photos").set({
-                [slotFoto]: urlInput
-            }, { merge: true });
+        // Jalankan Monitoring untuk tiap divisi
+        renderDivisi("Persiapan", "persiapanTable");
+        renderDivisi("Pengolahan", "pengolahanTable");
+        renderDivisi("Pemorsian", "pemorsianTable");
+        renderDivisi("Cuci Ompreng", "cuciTable");
 
-            alert(`Sukses! Tautan Link Foto ${slotFoto.slice(-1)} berhasil diterapkan.`);
-        } catch (error) {
-            console.error(error);
-            alert("Gagal mengubah foto: " + error.message);
-        }
-    }
-
-    // Fungsi untuk merender tabel divisi
-    function renderDivisi(namaDivisi, tableId) {
-        db.collection("divisi_status").where("nama_divisi", "==", namaDivisi).onSnapshot(snapshot => {
-            const tableBody = document.getElementById(tableId);
+        // Monitoring Distribusi Sekolah
+        db.collection("sekolah_list").onSnapshot(snapshot => {
+            const tableBody = document.getElementById('sekolahTable');
             tableBody.innerHTML = "";
             snapshot.forEach(doc => {
                 const d = doc.data();
-                const statusBadge = d.status === 'Hadir' ? 'bg-success' : 'bg-danger';
+                const statusColor = d.status === 'Sudah Sampai' ? 'text-success' : 'text-warning';
                 tableBody.innerHTML += `
                     <tr>
-                        <td>${d.nama_anggota || '-'}</td>
-                        <td>${d.jam_masuk || '-'}</td>
-                        <td><span class="badge badge-status ${statusBadge}">${d.status || 'Absen'}</span></td>
-                        <td>${d.jam_pulang || '-'}</td>
-                        <td>${d.foto_kegiatan ? `<a href="${d.foto_kegiatan}" target="_blank" class="btn-view">Lihat Foto</a>` : '-'}</td>
+                        <td class="fw-bold">${d.nama}</td>
+                        <td class="${statusColor} fw-bold">${d.status}</td>
+                        <td>${d.waktu_tiba || '-'}</td>
+                        <td>${d.foto_bukti ? `<a href="${d.foto_bukti}" target="_blank" class="btn-view">Lihat Bukti</a>` : '-'}</td>
                     </tr>
                 `;
             });
         });
-    }
 
-    // Jalankan Monitoring untuk tiap divisi
-    renderDivisi("Persiapan", "persiapanTable");
-    renderDivisi("Pengolahan", "pengolahanTable");
-    renderDivisi("Pemorsian", "pemorsianTable");
-    renderDivisi("Cuci Ompreng", "cuciTable");
-
-    // Monitoring Distribusi Sekolah
-    db.collection("sekolah_list").onSnapshot(snapshot => {
-        const tableBody = document.getElementById('sekolahTable');
-        tableBody.innerHTML = "";
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            const statusColor = d.status === 'Sudah Sampai' ? 'text-success' : 'text-warning';
-            tableBody.innerHTML += `
-                <tr>
-                    <td class="fw-bold">${d.nama}</td>
-                    <td class="${statusColor} fw-bold">${d.status}</td>
-                    <td>${d.waktu_tiba || '-'}</td>
-                    <td>${d.foto_bukti ? `<a href="${d.foto_bukti}" target="_blank" class="btn-view">Lihat Bukti</a>` : '-'}</td>
-                </tr>
-            `;
-        });
-    });
-
-    // =========================================================================
-    // SCRIPT UTAMA: DOWNLOAD DATA KE EXCEL
-    // =========================================================================
-    document.getElementById('btnDownloadExcel').addEventListener('click', async function() {
-        const btn = document.getElementById('btnDownloadExcel');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengunduh Data...';
-        btn.disabled = true;
-
-        try {
-            // Cek apakah library XLSX sudah ter-load dengan benar
-            if (typeof XLSX === 'undefined') {
-                alert("Gagal memuat sistem generator Excel. Periksa koneksi internet Anda!");
-                return;
-            }
-
-            // 1. Ambil Data Absensi Divisi dari Firestore
-            const divisiSnapshot = await db.collection("divisi_status").get();
-            const dataDivisi = [];
-            divisiSnapshot.forEach(doc => {
-                const d = doc.data();
-                dataDivisi.push({
-                    "Nama Divisi": d.nama_divisi || '-',
-                    "Nama Anggota": d.nama_anggota || '-',
-                    "Status Kehadiran": d.status || '-',
-                    "Jam Masuk": d.jam_masuk || '-',
-                    "Jam Pulang": d.jam_pulang || '-',
-                    "Link Foto Kegiatan": d.foto_kegiatan || '-',
-                    "Waktu Input Data": d.timestamp ? d.timestamp.toDate().toLocaleString('id-ID') : '-'
-                });
-            });
-
-            // 2. Ambil Data Logistik Sekolah dari Firestore
-            const sekolahSnapshot = await db.collection("sekolah_list").get();
-            const dataSekolah = [];
-            sekolahSnapshot.forEach(doc => {
-                const d = doc.data();
-                dataSekolah.push({
-                    "Nama Sekolah": d.nama || '-',
-                    "Status Logistik": d.status || '-',
-                    "Waktu Tiba": d.waktu_tiba || '-',
-                    "Link Foto Bukti": d.foto_bukti || '-'
-                });
-            });
-
-            // 3. Bangun struktur file Excel
-            const workbook = XLSX.utils.book_new();
-
-            // Set Sheet 1 (Data Absensi)
-            const sheetDivisi = XLSX.utils.json_to_sheet(dataDivisi.length ? dataDivisi : [{"Keterangan": "Belum ada data absensi hari ini"}]);
-            XLSX.utils.book_append_sheet(workbook, sheetDivisi, "Absensi Divisi");
-
-            // Set Sheet 2 (Logistik Sekolah)
-            const sheetSekolah = XLSX.utils.json_to_sheet(dataSekolah.length ? dataSekolah : [{"Keterangan": "Belum ada data logistik pengiriman sekolah"}]);
-            XLSX.utils.book_append_sheet(workbook, sheetSekolah, "Logistik Sekolah");
-
-            // 4. Set nama file sesuai tanggal hari ini
-            const hariIni = new Date().toISOString().split('T')[0];
-            const namaFile = `Laporan_SPPG_Bangunsari_02_${hariIni}.xlsx`;
-
-            // 5. Eksekusi Download file Excel ke device komputer/HP
-            XLSX.writeFile(workbook, namaFile);
-            alert("Sukses! Laporan data operasional hari ini berhasil diunduh.");
-
-        } catch (error) {
-            console.error("Detail Error: ", error);
-            alert("Terjadi kesalahan sistem: " + error.message);
-        } finally {
-            btn.innerHTML = '<i class="fa-solid fa-file-excel text-white me-1"></i> UNDUH DATA EXCEL';
-            btn.disabled = false;
-        }
-    });
-
-    // =========================================================================
-    // TOMBOL RESET DATA HARI INI
-    // =========================================================================
-    document.getElementById('btnResetAll').addEventListener('click', function() {
-        if (confirm("Apakah Anda yakin ingin mereset operasional hari ini?\n\n- Semua Nama Anggota Divisi akan DIHAPUS BERSIH.\n- Status Pengiriman Sekolah akan DI-UPDATE ke 'Dalam Perjalanan' (Data sekolah tidak hilang).")) {
-            const btn = document.getElementById('btnResetAll');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang Memproses Data...';
+        // =========================================================================
+        // SCRIPT UTAMA: DOWNLOAD DATA KE EXCEL
+        // =========================================================================
+        document.getElementById('btnDownloadExcel').addEventListener('click', async function() {
+            const btn = document.getElementById('btnDownloadExcel');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengunduh Data...';
             btn.disabled = true;
 
-            const batch = db.batch();
+            try {
+                if (typeof XLSX === 'undefined') {
+                    alert("Gagal memuat sistem generator Excel. Periksa koneksi internet Anda!");
+                    return;
+                }
 
-            // 1. Ambil seluruh data absensi divisi, lalu hapus dokumennya
-            db.collection("divisi_status").get().then(snapshot => {
-                snapshot.forEach(doc => {
-                    const docRef = db.collection("divisi_status").doc(doc.id);
-                    batch.delete(docRef);
-                });
-
-                // 2. Ambil data sekolah_list, tapi HANYA di-update statusnya saja
-                return db.collection("sekolah_list").get();
-            }).then(snapshot => {
-                snapshot.forEach(doc => {
-                    const docRef = db.collection("sekolah_list").doc(doc.id);
-                    batch.update(docRef, {
-                        status: "Dalam Perjalanan",
-                        waktu_tiba: "",
-                        foto_bukti: ""
+                const divisiSnapshot = await db.collection("divisi_status").get();
+                const dataDivisi = [];
+                divisiSnapshot.forEach(doc => {
+                    const d = doc.data();
+                    dataDivisi.push({
+                        "Nama Divisi": d.nama_divisi || '-',
+                        "Nama Anggota": d.nama_anggota || '-',
+                        "Status Kehadiran": d.status || '-',
+                        "Jam Masuk": d.jam_masuk || '-',
+                        "Jam Pulang": d.jam_pulang || '-',
+                        "Link Foto Kegiatan": d.foto_kegiatan || '-',
+                        "Waktu Input Data": d.timestamp ? d.timestamp.toDate().toLocaleString('id-ID') : '-'
                     });
                 });
 
-                return batch.commit();
-            }).then(() => {
-                alert("Berhasil! Data nama anggota divisi dibersihkan dan status logistik sekolah dikembalikan ke 'Dalam Perjalanan'.");
-                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI';
-                btn.disabled = false;
-            }).catch(error => {
-                console.error("Gagal melakukan proses reset: ", error);
+                const sekolahSnapshot = await db.collection("sekolah_list").get();
+                const dataSekolah = [];
+                sekolahSnapshot.forEach(doc => {
+                    const d = doc.data();
+                    dataSekolah.push({
+                        "Nama Sekolah": d.nama || '-',
+                        "Status Logistik": d.status || '-',
+                        "Waktu Tiba": d.waktu_tiba || '-',
+                        "Link Foto Bukti": d.foto_bukti || '-'
+                    });
+                });
+
+                const workbook = XLSX.utils.book_new();
+
+                const sheetDivisi = XLSX.utils.json_to_sheet(dataDivisi.length ? dataDivisi : [{"Keterangan": "Belum ada data absensi hari ini"}]);
+                XLSX.utils.book_append_sheet(workbook, sheetDivisi, "Absensi Divisi");
+
+                const sheetSekolah = XLSX.utils.json_to_sheet(dataSekolah.length ? dataSekolah : [{"Keterangan": "Belum ada data logistik pengiriman sekolah"}]);
+                XLSX.utils.book_append_sheet(workbook, sheetSekolah, "Logistik Sekolah");
+
+                const hariIni = new Date().toISOString().split('T')[0];
+                const namaFile = `Laporan_SPPG_Bangunsari_02_${hariIni}.xlsx`;
+
+                XLSX.writeFile(workbook, namaFile);
+                alert("Sukses! Laporan data operasional hari ini berhasil diunduh.");
+
+            } catch (error) {
+                console.error("Detail Error: ", error);
                 alert("Terjadi kesalahan sistem: " + error.message);
-                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI';
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-file-excel text-white me-1"></i> UNDUH DATA EXCEL';
                 btn.disabled = false;
-            });
-        }
-    });
+            }
+        });
+
+        // =========================================================================
+        // TOMBOL RESET DATA HARI INI
+        // =========================================================================
+        document.getElementById('btnResetAll').addEventListener('click', function() {
+            if (confirm("Apakah Anda yakin ingin mereset operasional hari ini?\n\n- Semua Nama Anggota Divisi akan DIHAPUS BERSIH.\n- Status Pengiriman Sekolah akan DI-UPDATE ke 'Dalam Perjalanan' (Data sekolah tidak hilang).")) {
+                const btn = document.getElementById('btnResetAll');
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang Memproses Data...';
+                btn.disabled = true;
+
+                const batch = db.batch();
+
+                db.collection("divisi_status").get().then(snapshot => {
+                    snapshot.forEach(doc => {
+                        const docRef = db.collection("divisi_status").doc(doc.id);
+                        batch.delete(docRef);
+                    });
+
+                    return db.collection("sekolah_list").get();
+                }).then(snapshot => {
+                    snapshot.forEach(doc => {
+                        const docRef = db.collection("sekolah_list").doc(doc.id);
+                        batch.update(docRef, {
+                            status: "Dalam Perjalanan",
+                            waktu_tiba: "",
+                            foto_bukti: ""
+                        });
+                    });
+
+                    return batch.commit();
+                }).then(() => {
+                    alert("Berhasil! Data nama anggota divisi dibersihkan dan status logistik sekolah dikembalikan ke 'Dalam Perjalanan'.");
+                    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI';
+                    btn.disabled = false;
+                }).catch(error => {
+                    console.error("Gagal melakukan proses reset: ", error);
+                    alert("Terjadi kesalahan sistem: " + error.message);
+                    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> RESET STATUS & DATA HARI INI';
+                    btn.disabled = false;
+                });
+            }
+        });
+        
+        console.log("Aplikasi Admin siap, data berhasil dimuat!");
+    }
 </script>
 </body>
 </html>
