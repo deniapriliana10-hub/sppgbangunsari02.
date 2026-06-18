@@ -124,140 +124,171 @@
     const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwdCqsYFa9PGX3_L4tkBVDpYHCoGPzY2QnvIldHEWTk4Z1qpkOJ2g7A1C_iqF1wih73pw/exec";
     let gambarBase64Temp = {};
 
-    // Monitor Data Secara Real-Time
-    db.collection("sekolah_list").onSnapshot((querySnapshot) => {
-        const container = document.getElementById('daftarSekolahDriver');
-        container.innerHTML = "";
+    // VARIABEL GLOBAL AGAR BISA DIAKSES OLEH ELEMEN HTML (onchange & onclick)
+    let prosesGambar;
+    let updateStatusSampai;
 
-        if (querySnapshot.empty) {
-            container.innerHTML = `
-                <div class="col-12 text-center text-muted py-5 card card-sekolah">
-                    <i class="fa-solid fa-clipboard-check fa-3x mb-3 text-disabled" style="opacity: 0.3;"></i>
-                    <p class="fw-semibold mb-0">Belum ada rute pengiriman yang ditugaskan hari ini.</p>
-                </div>`;
-            return;
+    // ==========================================
+    // 1. PROTEKSI UTAMA: CEK STATUS LOGIN DRIVER
+    // ==========================================
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            // Jika tidak terdeteksi login, langsung amankan halaman ke login.html
+            alert("Akses Ditolak! Silakan login untuk membuat laporan.");
+            window.location.href = "login.html";
+        } else {
+            // Jika login valid, aktifkan aplikasi pengiriman driver
+            jalankanAplikasiLapor();
         }
-
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const idDoc = doc.id;
-            const isSelesai = data.status === "Sudah Sampai";
-
-            let bagianAksi = "";
-            if (!isSelesai) {
-                bagianAksi = `
-                    <div class="file-upload-wrapper">
-                        <label class="form-label small fw-bold text-secondary"><i class="fa-solid fa-camera me-1"></i> Ambil Foto Dokumentasi / Bukti:</label>
-                        <input type="file" accept="image/*" capture="environment" onchange="prosesGambar(this, '${idDoc}')" class="form-control form-control-lg bg-light" style="font-size: 15px;">
-                        <div id="container-prev-${idDoc}" class="preview-container">
-                            <img id="prev-${idDoc}" class="preview-img img-fluid">
-                        </div>
-                    </div>
-                    <button class="btn btn-primary btn-action w-100 shadow-sm" id="btn-${idDoc}" onclick="updateStatusSampai('${idDoc}')">
-                        <i class="fa-solid fa-circle-check me-1"></i> Konfirmasi Sampai di Lokasi
-                    </button>
-                `;
-            } else {
-                bagianAksi = `
-                    <div class="alert alert-success d-flex align-items-center justify-content-center gap-2 mb-0 border-0 fw-bold py-3" style="border-radius: 12px; background-color: #e8f5e9; color: #2e7d32;">
-                        <i class="fa-solid fa-square-check fa-lg"></i> Distribusi Selesai (${data.waktu_tiba || ''})
-                    </div>
-                `;
-            }
-
-            const cardHTML = `
-                <div class="col-12">
-                    <div class="card card-sekolah p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <span class="text-uppercase tracking-wider text-muted small fw-bold d-block mb-1">Tujuan Pengiriman</span>
-                                <h4 class="fw-bold text-dark mb-0">${data.nama || "Nama Sekolah"}</h4>
-                            </div>
-                            <span class="badge badge-status ${isSelesai ? 'bg-success text-white' : 'bg-warning text-dark'}">
-                                <i class="fa-solid ${isSelesai ? 'fa-check-double' : 'fa-truck-moving'} me-1"></i> ${data.status || 'Dalam Perjalanan'}
-                            </span>
-                        </div>
-                        <hr class="my-3" style="border-color: var(--card-border);">
-                        ${bagianAksi}
-                    </div>
-                </div>
-            `;
-            container.innerHTML += cardHTML;
-        });
     });
 
-    // Proses konversi berkas kamera ke teks Base64
-    function prosesGambar(input, idDoc) {
-        const file = input.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                gambarBase64Temp[idDoc] = e.target.result;
-                const containerPrev = document.getElementById(`container-prev-${idDoc}`);
-                const preview = document.getElementById(`prev-${idDoc}`);
-                preview.src = e.target.result;
-                containerPrev.style.display = "block";
+    // ==========================================
+    // 2. BUNGKUS SELURUH SISTEM DRIVER DI SINI
+    // ==========================================
+    function jalankanAplikasiLapor() {
+
+        // Monitor Data Secara Real-Time
+        db.collection("sekolah_list").onSnapshot((querySnapshot) => {
+            const container = document.getElementById('daftarSekolahDriver');
+            container.innerHTML = "";
+
+            if (querySnapshot.empty) {
+                container.innerHTML = `
+                    <div class="col-12 text-center text-muted py-5 card card-sekolah">
+                        <i class="fa-solid fa-clipboard-check fa-3x mb-3 text-disabled" style="opacity: 0.3;"></i>
+                        <p class="fw-semibold mb-0">Belum ada rute pengiriman yang ditugaskan hari ini.</p>
+                    </div>`;
+                return;
             }
-            reader.readAsDataURL(file);
-        }
-    }
 
-    // Eksekusi pengunggahan data & sinkronisasi waktu operasional
-    function updateStatusSampai(idDokumen) {
-        if (!gambarBase64Temp[idDokumen]) {
-            alert("Harap lampirkan atau ambil foto bukti serah terima terlebih dahulu!");
-            return;
-        }
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const idDoc = doc.id;
+                const isSelesai = data.status === "Sudah Sampai";
 
-        if(confirm("Apakah Anda yakin ingin menyelesaikan tugas pengiriman pada sekolah ini?")) {
-            const btn = document.getElementById(`btn-${idDokumen}`);
-            const teksAwal = btn.innerHTML;
-            
-            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce me-1"></i> Menyimpan Bukti ke Google Drive...';
-            btn.classList.add("disabled");
-
-            db.collection("sekolah_list").doc(idDokumen).get().then((docSnap) => {
-                const namaSekolah = docSnap.data().nama || "Sekolah";
-
-                return fetch(appsScriptUrl, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        nama_sekolah: namaSekolah,
-                        gambar: gambarBase64Temp[idDokumen]
-                    })
-                });
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.status === "success") {
-                    // Dapatkan waktu lokal saat ini untuk parameter "Waktu Tiba"
-                    const sekarang = new Date();
-                    const opsiWaktu = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-                    const stringWaktu = sekarang.toLocaleTimeString('id-ID', opsiWaktu) + " WIB";
-
-                    return db.collection("sekolah_list").doc(idDokumen).update({
-                        status: "Sudah Sampai",
-                        foto_bukti: result.url,
-                        waktu_tiba: stringWaktu
-                    });
+                let bagianAksi = "";
+                if (!isSelesai) {
+                    bagianAksi = `
+                        <div class="file-upload-wrapper">
+                            <label class="form-label small fw-bold text-secondary"><i class="fa-solid fa-camera me-1"></i> Ambil Foto Dokumentasi / Bukti:</label>
+                            <input type="file" accept="image/*" capture="environment" onchange="prosesGambar(this, '${idDoc}')" class="form-control form-control-lg bg-light" style="font-size: 15px;">
+                            <div id="container-prev-${idDoc}" class="preview-container">
+                                <img id="prev-${idDoc}" class="preview-img img-fluid">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-action w-100 shadow-sm" id="btn-${idDoc}" onclick="updateStatusSampai('${idDoc}')">
+                            <i class="fa-solid fa-circle-check me-1"></i> Konfirmasi Sampai di Lokasi
+                        </button>
+                    `;
                 } else {
-                    throw new Error(result.message);
+                    bagianAksi = `
+                        <div class="alert alert-success d-flex align-items-center justify-content-center gap-2 mb-0 border-0 fw-bold py-3" style="border-radius: 12px; background-color: #e8f5e9; color: #2e7d32;">
+                            <i class="fa-solid fa-square-check fa-lg"></i> Distribusi Selesai (${data.waktu_tiba || ''})
+                        </div>
+                    `;
                 }
-            })
-            .then(() => {
-                alert("Laporan pengiriman berhasil dikirim!");
-            })
-            .catch((err) => {
-                alert("Gagal memproses laporan: " + err.message);
-                btn.innerHTML = teksAwal;
-                btn.classList.remove("disabled");
+
+                const cardHTML = `
+                    <div class="col-12">
+                        <div class="card card-sekolah p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="text-uppercase tracking-wider text-muted small fw-bold d-block mb-1">Tujuan Pengiriman</span>
+                                    <h4 class="fw-bold text-dark mb-0">${data.nama || "Nama Sekolah"}</h4>
+                                </div>
+                                <span class="badge badge-status ${isSelesai ? 'bg-success text-white' : 'bg-warning text-dark'}">
+                                    <i class="fa-solid ${isSelesai ? 'fa-check-double' : 'fa-truck-moving'} me-1"></i> ${data.status || 'Dalam Perjalanan'}
+                                </span>
+                            </div>
+                            <hr class="my-3" style="border-color: var(--card-border);">
+                            ${bagianAksi}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHTML;
             });
+        });
+
+        // Proses konversi berkas kamera ke teks Base64 (Global scope definition)
+        prosesGambar = function(input, idDoc) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    gambarBase64Temp[idDoc] = e.target.result;
+                    const containerPrev = document.getElementById(`container-prev-${idDoc}`);
+                    const preview = document.getElementById(`prev-${idDoc}`);
+                    if(preview && containerPrev) {
+                        preview.src = e.target.result;
+                        containerPrev.style.display = "block";
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
         }
+
+        // Eksekusi pengunggahan data & sinkronisasi waktu operasional (Global scope definition)
+        updateStatusSampai = function(idDokumen) {
+            if (!gambarBase64Temp[idDokumen]) {
+                alert("Harap lampirkan atau ambil foto bukti serah terima terlebih dahulu!");
+                return;
+            }
+
+            if(confirm("Apakah Anda yakin ingin menyelesaikan tugas pengiriman pada sekolah ini?")) {
+                const btn = document.getElementById(`btn-${idDokumen}`);
+                const teksAwal = btn.innerHTML;
+                
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce me-1"></i> Menyimpan Bukti ke Google Drive...';
+                btn.classList.add("disabled");
+
+                db.collection("sekolah_list").doc(idDokumen).get().then((docSnap) => {
+                    const namaSekolah = docSnap.data().nama || "Sekolah";
+
+                    return fetch(appsScriptUrl, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            nama_sekolah: namaSekolah,
+                            gambar: gambarBase64Temp[idDokumen]
+                        })
+                    });
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === "success") {
+                        const sekarang = new Date();
+                        const opsiWaktu = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                        const stringWaktu = sekarang.toLocaleTimeString('id-ID', opsiWaktu) + " WIB";
+
+                        return db.collection("sekolah_list").doc(idDokumen).update({
+                            status: "Sudah Sampai",
+                            foto_bukti: result.url,
+                            waktu_tiba: stringWaktu
+                        });
+                    } else {
+                        throw new Error(result.message);
+                    }
+                })
+                .then(() => {
+                    alert("Laporan pengiriman berhasil dikirim!");
+                })
+                .catch((err) => {
+                    alert("Gagal memproses laporan: " + err.message);
+                    btn.innerHTML = teksAwal;
+                    btn.classList.remove("disabled");
+                });
+            }
+        }
+
+        console.log("Sistem Driver Aktif & Siap Digunakan.");
     }
 
-    // Aksi tombol Logout
+    // Aksi tombol Logout (Bisa ditekan kapan saja)
     document.getElementById('btnLogout').addEventListener('click', function() {
-        firebase.auth().signOut().then(() => { window.location.href = "login.html"; });
+        firebase.auth().signOut().then(() => { 
+            window.location.href = "login.html"; 
+        }).catch((error) => {
+            alert("Gagal keluar: " + error.message);
+        });
     });
 </script>
 
