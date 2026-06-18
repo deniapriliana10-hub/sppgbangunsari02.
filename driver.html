@@ -121,16 +121,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // PASTIKAN LINK INI ADALAH LINK WEB APP GOOGLE APPS SCRIPT ANDA YANG BERAKHIRAN /exec
-    const appsScriptUrl = "https://script.google.com/macros/s/AKfycbyAbI0lG6EYWt2bjhZfRolxRKr1eF4nk5o8CxC65sc_2sDzTd-JA40JG0QicSJ6SOvz-w/exec";
+    // TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT BARU ANDA YANG BERAKHIRAN /exec DI SINI
+    const appsScriptUrl = "TEMPEL_LINK_EXEC_BARU_ANDA_DI_SINI";
     let gambarBase64Temp = {};
 
     let prosesGambar;
     let updateStatusSampai;
 
-    // ==========================================
-    // 1. PROTEKSI UTAMA: CEK STATUS LOGIN DRIVER
-    // ==========================================
     firebase.auth().onAuthStateChanged((user) => {
         if (!user) {
             alert("Akses Ditolak! Silakan login untuk membuat laporan.");
@@ -140,12 +137,8 @@
         }
     });
 
-    // ==========================================
-    // 2. BUNGKUS SELURUH SISTEM DRIVER DI SINI
-    // ==========================================
     function jalankanAplikasiLapor() {
 
-        // Monitor Data Secara Real-Time
         db.collection("sekolah_list").onSnapshot((querySnapshot) => {
             const container = document.getElementById('daftarSekolahDriver');
             container.innerHTML = "";
@@ -207,9 +200,6 @@
             });
         });
 
-        // ========================================================
-        // PERBAIKAN: MODUL AUTO COMPRESS & RESIZE GAMBAR (HTML5 CANVAS)
-        // ========================================================
         prosesGambar = function(input, idDoc) {
             const file = input.files[0];
             if (file) {
@@ -221,7 +211,6 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
 
-                        // Set batas resolusi maksimal lebar foto 800px (Sangat pas untuk layar HP & hemat data)
                         const MAX_WIDTH = 800;
                         let width = img.width;
                         let height = img.height;
@@ -235,13 +224,9 @@
                         canvas.height = height;
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        // Kompresi kualitas gambar ke 70% (0.7) agar ukurannya menyusut drastis ke hitungan KB
                         const dataUrlKompres = canvas.toDataURL('image/jpeg', 0.7);
-
-                        // Simpan teks hasil kompresi ke variabel penampung sementara
                         gambarBase64Temp[idDoc] = dataUrlKompres;
 
-                        // Tampilkan di preview layar driver
                         const containerPrev = document.getElementById(`container-prev-${idDoc}`);
                         const preview = document.getElementById(`prev-${idDoc}`);
                         if(preview && containerPrev) {
@@ -254,7 +239,6 @@
             }
         }
 
-        // Eksekusi pengunggahan data
         updateStatusSampai = function(idDokumen) {
             if (!gambarBase64Temp[idDokumen]) {
                 alert("Harap lampirkan atau ambil foto bukti serah terima terlebih dahulu!");
@@ -305,11 +289,8 @@
                 });
             }
         }
-
-        console.log("Sistem Driver Aktif & Fitur Kompresi Gambar Siap Digunakan.");
     }
 
-    // Aksi tombol Logout
     document.getElementById('btnLogout').addEventListener('click', function() {
         firebase.auth().signOut().then(() => { 
             window.location.href = "login.html"; 
@@ -318,6 +299,5 @@
         });
     });
 </script>
-
 </body>
 </html>
