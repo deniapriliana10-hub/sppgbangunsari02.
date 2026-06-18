@@ -45,7 +45,6 @@
         }
         .task-item:hover {
             border-color: var(--secondary-guard);
-            background-color: #f0fdf4;
         }
         .form-check-input:checked + .form-check-label {
             color: #166534;
@@ -70,6 +69,11 @@
             width: 100%;
         }
         .btn-guard:hover { background-color: #172554; color: white; }
+        .btn-tambah-tugas {
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -88,7 +92,7 @@
 <div class="container">
     <div class="panel-title">
         <h2 class="fw-bold text-dark mb-1">Kontrol Area & Tugas Keamanan</h2>
-        <p class="text-secondary mb-0">Pilih identitas Anda, centang area patroli setelah selesai diperiksa.</p>
+        <p class="text-secondary mb-0">Pilih nama, centang tugas pokok, atau tuliskan tugas mandiri tambahan Anda.</p>
     </div>
 
     <div class="row justify-content-center">
@@ -105,9 +109,15 @@
                         </select>
                     </div>
 
-                    <label class="form-label fw-bold small text-secondary mb-2">Daftar Tugas Patroli</label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold small text-secondary mb-0">Daftar Tugas Pokok & Tambahan</label>
+                        <button type="button" class="btn btn-outline-primary btn-sm btn-tambah-tugas" onclick="tambahTugasKustom()">
+                            <i class="fa-solid fa-plus me-1"></i> Tulis Tugas Lain
+                        </button>
+                    </div>
                     
-                    <div class="task-list">
+                    <div id="containerDaftarTugas">
+                        
                         <div class="task-item d-flex justify-content-between align-items-center">
                             <div class="form-check m-0">
                                 <input class="form-check-input chk-task" type="checkbox" value="Cek Area Dapur" id="task1" onchange="catatWaktu(this, 'time1')">
@@ -155,6 +165,7 @@
                             </div>
                             <span id="time6" class="time-badge">Belum</span>
                         </div>
+
                     </div>
 
                     <button type="submit" class="btn btn-guard shadow-sm mt-3" id="btnKirim">
@@ -184,7 +195,45 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Fungsi otomatis mencatat jam ketika checkbox dicentang
+    let jumlahTugasKustom = 0;
+
+    // FUNGSI UNTUK MENAMBAH BARIS TULIS TUGAS LAIN SECARA DINAMIS
+    function tambahTugasKustom() {
+        jumlahTugasKustom++;
+        const idUnik = "kustom_" + jumlahTugasKustom;
+        const targetSpanId = "time_kustom_" + jumlahTugasKustom;
+        
+        const itemHTML = `
+            <div class="task-item bg-light border-primary" id="box_${idUnik}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-primary small">Tugas Tambahan Sendiri</span>
+                    <button type="button" class="btn text-danger p-0 border-0 btn-sm" onclick="hapusTugasKustom('${idUnik}')"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+                <input type="text" class="form-control mb-2 input-nama-kustom" placeholder="Tulis nama kegiatan/tugas di sini..." oninput="syncValueCheckbox('${idUnik}', this.value)" required>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="form-check m-0">
+                        <input class="form-check-input chk-task" type="checkbox" value="" id="${idUnik}" onchange="catatWaktu(this, '${targetSpanId}')">
+                        <label class="form-check-label ms-2 fw-semibold text-success" for="${idUnik}">Selesai Dikerjakan</label>
+                    </div>
+                    <span id="${targetSpanId}" class="time-badge">Belum</span>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('containerDaftarTugas').insertAdjacentHTML('beforeend', itemHTML);
+    }
+
+    // Menyelaraskan teks ketikan ke nilai value checkbox kustom
+    function syncValueCheckbox(idCheckbox, teks) {
+        document.getElementById(idCheckbox).value = "Tambahan: " + teks;
+    }
+
+    // Fungsi hapus baris kustom jika salah tulis sebelum dikirim
+    function hapusTugasKustom(idElement) {
+        document.getElementById("box_" + idElement).remove();
+    }
+
+    // Mencatat jam saat checkbox disentuh/dicentang
     function catatWaktu(checkbox, targetSpanId) {
         const targetSpan = document.getElementById(targetSpanId);
         if (checkbox.checked) {
@@ -200,7 +249,7 @@
         }
     }
 
-    // Aksi submit formulir laporan
+    // Kirim Laporan Checklist ke Firebase
     document.getElementById('formChecklist').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -213,11 +262,17 @@
         const detailTugas = [];
         const chkTasks = document.querySelectorAll('.chk-task');
         
-        // Loop untuk mengambil status dari masing-masing ceklis
-        chkTasks.forEach((chk, index) => {
-            const spanId = "time" + (index + 1);
-            const jamSelesai = document.getElementById(spanId).innerText;
+        chkTasks.forEach((chk) => {
+            // Mencari elemen penunjuk waktu di struktur induknya masing-masing
+            const parentBox = chk.closest('.task-item');
+            const targetSpan = parentBox.querySelector('.time-badge');
+            const jamSelesai = targetSpan.innerText;
             
+            // Validasi proteksi: Jika ada kolom ketikan tugas kosong, tolak.
+            if(chk.value.trim() === "" || chk.value === "Tambahan: ") {
+                return; 
+            }
+
             detailTugas.push({
                 nama_tugas: chk.value,
                 selesai: chk.checked,
@@ -225,10 +280,16 @@
             });
         });
 
+        if(detailTugas.length === 0) {
+            alert("Mohon isi minimal satu nama tugas tambahan!");
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Kirim Laporan Tugas Security';
+            btn.disabled = false;
+            return;
+        }
+
         const hariIni = new Date();
         const stringTanggal = hariIni.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-        // Simpan ke Firestore
         db.collection("security_tasks").add({
             nama_security: namaSecurity,
             tanggal: stringTanggal,
