@@ -121,10 +121,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ========================================================
-    // TEMPELKAN URL EXEC GOOGLE APPS SCRIPT BARU ANDA DI SINI
-    // ========================================================
-    const appsScriptUrl = "TEMPEL_URL_WEB_APP_EXEC_BARU_ANDA_DI_SINI";
+    // Menggunakan Tautan URL Web App yang terbukti aktif dan sukses di lapor (2).html
+    const appsScriptUrl = "https://script.google.com/macros/s/AKfycbyAbI0lG6EYWt2bjhZfRolxRKr1eF4nk5o8CxC65sc_2sDzTd-JA40JG0QicSJ6SOvz-w/exec";
     
     let gambarBase64Temp = {};
     let prosesGambar;
@@ -256,7 +254,7 @@
                 db.collection("sekolah_list").doc(idDokumen).get().then((docSnap) => {
                     const namaSekolah = docSnap.data().nama || "Sekolah";
 
-                    // PERBAIKAN: Menggunakan objek parameter 'divisi' dan 'image' agar sinkron dengan backend yang sukses
+                    // SINKRONISASI MUTLAK: Menggunakan 'divisi' dan 'image' agar meniru kesuksesan lapor (2).html
                     return fetch(appsScriptUrl, {
                         method: "POST",
                         body: JSON.stringify({
