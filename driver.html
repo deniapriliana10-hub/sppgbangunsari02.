@@ -121,10 +121,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // PASTIKAN LINK INI ADALAH LINK WEB APP GOOGLE APPS SCRIPT ANDA YANG BERAKHIRAN /exec
     const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwdCqsYFa9PGX3_L4tkBVDpYHCoGPzY2QnvIldHEWTk4Z1qpkOJ2g7A1C_iqF1wih73pw/exec";
     let gambarBase64Temp = {};
 
-    // VARIABEL GLOBAL AGAR BISA DIAKSES OLEH ELEMEN HTML (onchange & onclick)
     let prosesGambar;
     let updateStatusSampai;
 
@@ -133,11 +133,9 @@
     // ==========================================
     firebase.auth().onAuthStateChanged((user) => {
         if (!user) {
-            // Jika tidak terdeteksi login, langsung amankan halaman ke login.html
             alert("Akses Ditolak! Silakan login untuk membuat laporan.");
             window.location.href = "login.html";
         } else {
-            // Jika login valid, aktifkan aplikasi pengiriman driver
             jalankanAplikasiLapor();
         }
     });
@@ -209,25 +207,54 @@
             });
         });
 
-        // Proses konversi berkas kamera ke teks Base64 (Global scope definition)
+        // ========================================================
+        // PERBAIKAN: MODUL AUTO COMPRESS & RESIZE GAMBAR (HTML5 CANVAS)
+        // ========================================================
         prosesGambar = function(input, idDoc) {
             const file = input.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    gambarBase64Temp[idDoc] = e.target.result;
-                    const containerPrev = document.getElementById(`container-prev-${idDoc}`);
-                    const preview = document.getElementById(`prev-${idDoc}`);
-                    if(preview && containerPrev) {
-                        preview.src = e.target.result;
-                        containerPrev.style.display = "block";
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // Set batas resolusi maksimal lebar foto 800px (Sangat pas untuk layar HP & hemat data)
+                        const MAX_WIDTH = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Kompresi kualitas gambar ke 70% (0.7) agar ukurannya menyusut drastis ke hitungan KB
+                        const dataUrlKompres = canvas.toDataURL('image/jpeg', 0.7);
+
+                        // Simpan teks hasil kompresi ke variabel penampung sementara
+                        gambarBase64Temp[idDoc] = dataUrlKompres;
+
+                        // Tampilkan di preview layar driver
+                        const containerPrev = document.getElementById(`container-prev-${idDoc}`);
+                        const preview = document.getElementById(`prev-${idDoc}`);
+                        if(preview && containerPrev) {
+                            preview.src = dataUrlKompres;
+                            containerPrev.style.display = "block";
+                        }
                     }
                 }
                 reader.readAsDataURL(file);
             }
         }
 
-        // Eksekusi pengunggahan data & sinkronisasi waktu operasional (Global scope definition)
+        // Eksekusi pengunggahan data
         updateStatusSampai = function(idDokumen) {
             if (!gambarBase64Temp[idDokumen]) {
                 alert("Harap lampirkan atau ambil foto bukti serah terima terlebih dahulu!");
@@ -279,10 +306,10 @@
             }
         }
 
-        console.log("Sistem Driver Aktif & Siap Digunakan.");
+        console.log("Sistem Driver Aktif & Fitur Kompresi Gambar Siap Digunakan.");
     }
 
-    // Aksi tombol Logout (Bisa ditekan kapan saja)
+    // Aksi tombol Logout
     document.getElementById('btnLogout').addEventListener('click', function() {
         firebase.auth().signOut().then(() => { 
             window.location.href = "login.html"; 
