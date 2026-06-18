@@ -215,16 +215,34 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-// ==========================================
-// SKRIP PROTEKSI HALAMAN ADMIN (WAJIB LOGIN)
-// ==========================================
-firebase.auth().onAuthStateChanged((user) => {
-    if (!user) {
-        // Jika tidak ada user yang login, tendang ke halaman login
-        alert("Akses Ditolak! Anda harus login terlebih dahulu.");
-        window.location.href = "login.html";
+
+    // ==========================================
+    // 1. PROTEKSI UTAMA: CEK STATUS LOGIN DULU
+    // ==========================================
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            // Jika TIDAK login, langsung tendang keluar
+            alert("Akses Ditolak! Anda harus login terlebih dahulu.");
+            window.location.href = "login.html";
+        } else {
+            // JIKA SUDAH LOGIN, BARU JALANKAN SEMUA FUNGSI AMBIL DATA
+            jalankanAplikasiAdmin();
+        }
+    });
+
+    // ==========================================
+    // 2. BUNGKUS SEMUA FUNGSI DATABASE DI SINI
+    // ==========================================
+    function jalankanAplikasiAdmin() {
+        
+        // Taruh semua kode penarik data database Anda di dalam sini, seperti:
+        // - db.collection("dashboard_data").onSnapshot...
+        // - db.collection("sekolah_list").onSnapshot...
+        // - Fungsi ekspor Excel, fungsi Reset, dll.
+        
+        console.log("Aplikasi Admin siap, data berhasil dimuat!");
     }
-});
+</script>
     // RENDER FOTO AKTIF DARI FIRESTORE KE FORM & KOLOM INPUT ADMIN
     db.collection("galeri_data").doc("sppg_photos").onSnapshot((doc) => {
         if (doc.exists) {
