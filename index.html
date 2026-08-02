@@ -280,26 +280,28 @@ Dashboard Distribusi
 <section id="tabel-perjalanan" class="py-5 bg-light">
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-10">
+        <div class="col-md-11">
             <div class="card p-4 border-0 shadow-sm rounded-4">
-                <h3 class="fw-bold text-center text-dark mb-2">Status Pengiriman Hari Ini</h3>
-                <p class="text-center text-muted small mb-4">Data diperbarui otomatis langsung oleh Driver di lapangan</p>
+                <h3 class="fw-bold text-center text-dark mb-2">Status Distribusi & Penjemputan Ompreng</h3>
+                <p class="text-center text-muted small mb-4">Sistem pemantauan real-time pengiriman & penjemputan ompreng</p>
                 
                 <div class="table-responsive table-custom">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr class="text-white">
-                                <th scope="col" class="ps-4 py-3 border-0">Nama Sekolah Penerima</th>
-                                <th scope="col" class="text-center py-3 border-0" style="width: 200px;">Status Pengiriman</th>
-                                <th scope="col" class="text-center py-3 border-0" style="width: 150px;">Waktu Tiba</th>
-                                <th scope="col" class="text-center py-3 border-0" style="width: 150px;">Foto Bukti</th>
+                                <th scope="col" class="ps-4 py-3 border-0">Nama Sekolah</th>
+                                <th scope="col" class="text-center py-3 border-0">Pengiriman</th>
+                                <th scope="col" class="text-center py-3 border-0">Waktu Tiba</th>
+                                <th scope="col" class="text-center py-3 border-0">Kesiapan Sekolah</th>
+                                <th scope="col" class="text-center py-3 border-0">Penjemputan Driver</th>
+                                <th scope="col" class="text-center py-3 border-0">Bukti</th>
                             </tr>
                         </thead>
                         <tbody id="liveStatusSekolah">
                             <tr>
-                                <td colspan="4" class="text-center py-5 text-muted">
+                                <td colspan="6" class="text-center py-5 text-muted">
                                     <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                                    Menghubungkan ke satelit pengiriman...
+                                    Menghubungkan ke sistem distribusi...
                                 </td>
                             </tr>
                         </tbody>
@@ -385,7 +387,7 @@ MENU HARI INI
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 1. Ambil Angka Dashboard Real-time (SINKRON DENGAN DATA POSYANDU)
+    // 1. Ambil Angka Dashboard Real-time
     db.collection("dashboard_data").doc("sppg_stats").onSnapshot((doc) => {
         if (doc.exists) {
             const data = doc.data();
@@ -406,13 +408,13 @@ MENU HARI INI
         }
     });
 
-    // 3. Sinkronisasi Tabel Status Pengiriman + WAKTU TIBA + HITUNG PERSENTASE OTOMATIS
+    // 3. Sinkronisasi Tabel Status Pengiriman & Ompreng Kosong
     db.collection("sekolah_list").onSnapshot((querySnapshot) => {
         const tableBody = document.getElementById('liveStatusSekolah');
         tableBody.innerHTML = ""; 
 
         if(querySnapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Belum ada daftar sekolah.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">Belum ada daftar sekolah.</td></tr>`;
             document.getElementById('stat-persentase').innerText = "0%";
             return;
         }
@@ -424,35 +426,52 @@ MENU HARI INI
             const data = doc.data();
             totalSekolah++; 
             
-            let badgeHTML = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style="font-size: 12px;"><i class="fa-solid fa-truck-moving me-1"></i> Dalam Perjalanan</span>`;
-            let fotoHTML = `<span class="text-muted small">-</span>`;
+            // Status 1: Pengiriman Makanan
+            let badgePengiriman = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style="font-size: 11px;"><i class="fa-solid fa-truck-moving me-1"></i> Perjalanan</span>`;
             let jamTibaHTML = `<td class="text-center text-muted small">-</td>`;
 
             if (data.status === "Sudah Sampai") {
                 sekolahSelesai++; 
-                badgeHTML = `<span class="badge bg-success px-3 py-2 rounded-pill fw-bold" style="font-size: 12px;"><i class="fa-solid fa-circle-check me-1"></i> Sudah Sampai</span>`;
-                
+                badgePengiriman = `<span class="badge bg-success px-3 py-2 rounded-pill fw-bold" style="font-size: 11px;"><i class="fa-solid fa-circle-check me-1"></i> Terkirim</span>`;
                 if (data.waktu_tiba) {
-                    jamTibaHTML = `<td class="text-center fw-bold text-success" style="font-size: 14px;"><i class="fa-regular fa-clock me-1"></i> ${data.waktu_tiba}</td>`;
+                    jamTibaHTML = `<td class="text-center fw-bold text-success" style="font-size: 13px;"><i class="fa-regular fa-clock me-1"></i> ${data.waktu_tiba}</td>`;
                 }
+            }
 
-                if(data.foto_bukti) {
-                    fotoHTML = `<img src="${data.foto_bukti}" style="max-height: 45px; width: 60px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer;" onclick="window.open('${data.foto_bukti}', '_blank')">`;
-                }
+            // Status 2: Kesiapan Ompreng oleh Sekolah
+            let badgeSekolah = `<span class="badge bg-secondary px-3 py-2 rounded-pill fw-bold" style="font-size: 11px;"><i class="fa-solid fa-box me-1"></i> Belum Ready</span>`;
+            if (data.ompreng_sekolah === "Siap Diambil") {
+                badgeSekolah = `<span class="badge bg-info text-dark px-3 py-2 rounded-pill fw-bold" style="font-size: 11px;"><i class="fa-solid fa-box-open me-1"></i> Siap Diambil</span>`;
+            }
+
+            // Status 3: Penjemputan Ompreng oleh Driver
+            let badgePenjemputan = `<span class="badge bg-light text-muted border px-3 py-2 rounded-pill fw-bold" style="font-size: 11px;"><i class="fa-solid fa-hourglass-start me-1"></i> Menunggu</span>`;
+            if (data.ompreng_driver === "Dalam Penjemputan") {
+                badgePenjemputan = `<span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style="font-size: 11px;"><i class="fa-solid fa-truck-pickup me-1"></i> Penjemputan</span>`;
+            } else if (data.ompreng_driver === "Sudah Sampai Dapur") {
+                badgePenjemputan = `<span class="badge bg-primary px-3 py-2 rounded-pill fw-bold" style="font-size: 11px;"><i class="fa-solid fa-warehouse me-1"></i> Di Dapur</span>`;
+            }
+
+            // Foto Bukti
+            let fotoHTML = `<span class="text-muted small">-</span>`;
+            if(data.foto_bukti) {
+                fotoHTML = `<img src="${data.foto_bukti}" style="max-height: 40px; width: 55px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer;" onclick="window.open('${data.foto_bukti}', '_blank')">`;
             }
 
             const rowHTML = `
                 <tr>
-                    <td class="ps-4 fw-bold text-dark" style="font-size: 15px;">${data.nama || "Nama Sekolah Belum Diisi"}</td>
-                    <td class="text-center">${badgeHTML}</td>
+                    <td class="ps-4 fw-bold text-dark" style="font-size: 14px;">${data.nama || "Nama Sekolah Belum Diisi"}</td>
+                    <td class="text-center">${badgePengiriman}</td>
                     ${jamTibaHTML}
+                    <td class="text-center">${badgeSekolah}</td>
+                    <td class="text-center">${badgePenjemputan}</td>
                     <td class="text-center">${fotoHTML}</td>
                 </tr>
             `;
             tableBody.innerHTML += rowHTML;
         });
 
-        // Hitung persentase real-time
+        // Hitung persentase pengiriman
         let hitungPersen = Math.round((sekolahSelesai / totalSekolah) * 100) || 0;
         document.getElementById('stat-persentase').innerText = hitungPersen + "%";
     });
