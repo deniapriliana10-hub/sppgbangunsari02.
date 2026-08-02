@@ -36,10 +36,6 @@
             box-shadow: 0 10px 25px rgba(30, 96, 145, 0.04); 
             transition: transform 0.3s ease, box-shadow 0.3s ease; 
         }
-        .card-sekolah:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(30, 96, 145, 0.08);
-        }
         .preview-container {
             background-color: #f8fafc;
             border: 2px dashed #cbd5e1;
@@ -47,10 +43,10 @@
             padding: 10px;
             text-align: center;
             display: none;
-            margin-top: 15px;
+            margin-top: 10px;
         }
         .preview-img { 
-            max-height: 180px; 
+            max-height: 160px; 
             border-radius: 8px; 
             object-fit: cover;
         }
@@ -64,11 +60,6 @@
             border-radius: 12px;
             padding: 12px;
             font-weight: 700;
-            transition: all 0.2s ease;
-        }
-        .file-upload-wrapper {
-            position: relative;
-            margin-bottom: 15px;
         }
         .box-ompreng {
             background-color: #f8fafc;
@@ -95,7 +86,7 @@
 <div class="container">
     <div class="panel-title">
         <h2 class="fw-bold text-dark mb-1">Manajemen Distribusi & Penjemputan</h2>
-        <p class="text-secondary mb-0">Kelola status pengiriman makanan dan penjemputan ompreng ke dapur utama.</p>
+        <p class="text-secondary mb-0">Kelola status pengiriman dan dokumentasi penjemputan ompreng ke dapur utama.</p>
     </div>
 
     <div class="row justify-content-center">
@@ -103,7 +94,7 @@
             <div id="daftarSekolahDriver" class="row g-4">
                 <div class="col-12 text-center py-5">
                     <div class="spinner-border text-primary mb-3" role="status"></div>
-                    <p class="text-muted">Menghubungkan ke sistem manajemen logistik...</p>
+                    <p class="text-muted">Menghubungkan ke sistem logistik...</p>
                 </div>
             </div>
         </div>
@@ -130,7 +121,11 @@
 
     const appsScriptUrl = "https://script.google.com/macros/s/AKfycbyAbI0lG6EYWt2bjhZfRolxRKr1eF4nk5o8CxC65sc_2sDzTd-JA40JG0QicSJ6SOvz-w/exec";
     
-    let gambarBase64Temp = {};
+    // Objek penyimpanan foto sementara per jenis aksi
+    let tempFotoKirim = {};
+    let tempFotoJemput = {};
+    let tempFotoDapur = {};
+
     let prosesGambar;
     let updateStatusSampai;
     let jemputOmpreng;
@@ -145,17 +140,31 @@
         }
     });
 
+    // FUNGSI UPLOAD GAMBAR KE GOOGLE DRIVE LEWAT APPS SCRIPT
+    async function uploadKeDrive(namaFolderSekolah, base64Image) {
+        try {
+            const response = await fetch(appsScriptUrl, {
+                method: "POST",
+                body: JSON.stringify({
+                    divisi: namaFolderSekolah,
+                    image: base64Image
+                })
+            });
+            const resData = await response.json();
+            return resData.status === "success" ? resData.url : "-";
+        } catch (err) {
+            console.error("Gagal Upload ke Drive:", err);
+            return "-";
+        }
+    }
+
     function jalankanAplikasiLapor() {
         db.collection("sekolah_list").onSnapshot((querySnapshot) => {
             const container = document.getElementById('daftarSekolahDriver');
             container.innerHTML = "";
 
             if (querySnapshot.empty) {
-                container.innerHTML = `
-                    <div class="col-12 text-center text-muted py-5 card card-sekolah">
-                        <i class="fa-solid fa-clipboard-check fa-3x mb-3 text-disabled" style="opacity: 0.3;"></i>
-                        <p class="fw-semibold mb-0">Belum ada rute pengiriman yang ditugaskan hari ini.</p>
-                    </div>`;
+                container.innerHTML = `<div class="col-12 text-center text-muted py-5 card card-sekolah"><p class="fw-semibold mb-0">Belum ada data pengiriman hari ini.</p></div>`;
                 return;
             }
 
@@ -164,31 +173,31 @@
                 const idDoc = doc.id;
                 const isPengirimanSelesai = data.status === "Sudah Sampai";
                 
-                // --- BAGIAN 1: PENGIRIMAN MAKANAN ---
+                // --- 1. BAGIAN PENGIRIMAN MAKANAN ---
                 let bagianPengiriman = "";
                 if (!isPengirimanSelesai) {
                     bagianPengiriman = `
-                        <div class="file-upload-wrapper">
-                            <label class="form-label small fw-bold text-secondary"><i class="fa-solid fa-camera me-1"></i> Ambil Foto Bukti Serah Terima Makanan:</label>
-                            <input type="file" accept="image/*" capture="environment" onchange="prosesGambar(this, '${idDoc}')" class="form-control form-control-lg bg-light" style="font-size: 15px;">
-                            <div id="container-prev-${idDoc}" class="preview-container">
-                                <img id="prev-${idDoc}" class="preview-img img-fluid">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-secondary"><i class="fa-solid fa-camera me-1"></i> Foto Bukti Serah Terima Makanan:</label>
+                            <input type="file" accept="image/*" capture="environment" onchange="prosesGambar(this, '${idDoc}', 'kirim')" class="form-control bg-light">
+                            <div id="container-prev-kirim-${idDoc}" class="preview-container">
+                                <img id="prev-kirim-${idDoc}" class="preview-img img-fluid">
                             </div>
                         </div>
-                        <button class="btn btn-primary btn-action w-100 shadow-sm" id="btn-${idDoc}" onclick="updateStatusSampai('${idDoc}')">
-                            <i class="fa-solid fa-circle-check me-1"></i> Konfirmasi Sampai di Lokasi Sekolah
+                        <button class="btn btn-primary btn-action w-100 shadow-sm" id="btn-kirim-${idDoc}" onclick="updateStatusSampai('${idDoc}')">
+                            <i class="fa-solid fa-circle-check me-1"></i> Konfirmasi Makanan Sampai
                         </button>
                     `;
                 } else {
                     bagianPengiriman = `
-                        <div class="alert alert-success d-flex align-items-center justify-content-between mb-0 border-0 fw-bold py-2 px-3 fs-6" style="border-radius: 10px; background-color: #e8f5e9; color: #2e7d32;">
+                        <div class="alert alert-success d-flex align-items-center justify-content-between mb-0 border-0 fw-bold py-2 px-3 small" style="border-radius: 10px;">
                             <span><i class="fa-solid fa-circle-check me-2"></i> Makanan Sampai di Sekolah</span>
                             <small class="fw-normal text-muted">${data.waktu_tiba || ''}</small>
                         </div>
                     `;
                 }
 
-                // --- BAGIAN 2: PENJEMPUTAN OMPRENG KOSONG ---
+                // --- 2. BAGIAN PENJEMPUTAN OMPRENG & SAMPAI DAPUR ---
                 let bagianOmpreng = "";
                 if (isPengirimanSelesai) {
                     const statusSekolah = data.ompreng_sekolah || "Belum Ready";
@@ -196,23 +205,43 @@
 
                     let badgeSekolahHTML = `<span class="badge bg-secondary">Guru Belum Konfirmasi</span>`;
                     if (statusSekolah === "Siap Diambil") {
-                        badgeSekolahHTML = `<span class="badge bg-info text-dark"><i class="fa-solid fa-box-open me-1"></i> Ompreng Ready di Sekolah</span>`;
+                        badgeSekolahHTML = `<span class="badge bg-info text-dark"><i class="fa-solid fa-box-open me-1"></i> Ompreng Ready</span>`;
                     }
 
                     let tombolOmprengHTML = "";
+
+                    // Tahap A: Sekolah Siap -> Driver Ambil Foto & Penjemputan
                     if (statusSekolah === "Siap Diambil" && statusDriver === "Menunggu") {
                         tombolOmprengHTML = `
-                            <button class="btn btn-warning btn-action text-dark w-100 shadow-sm mt-2" onclick="jemputOmpreng('${idDoc}')">
+                            <div class="mt-3">
+                                <label class="form-label small fw-bold text-secondary"><i class="fa-solid fa-camera me-1"></i> Foto Ambil Ompreng Kosong di Sekolah:</label>
+                                <input type="file" accept="image/*" capture="environment" onchange="prosesGambar(this, '${idDoc}', 'jemput')" class="form-control bg-light">
+                                <div id="container-prev-jemput-${idDoc}" class="preview-container">
+                                    <img id="prev-jemput-${idDoc}" class="preview-img img-fluid">
+                                </div>
+                            </div>
+                            <button class="btn btn-warning btn-action text-dark w-100 shadow-sm mt-2" id="btn-jemput-${idDoc}" onclick="jemputOmpreng('${idDoc}')">
                                 <i class="fa-solid fa-truck-pickup me-1"></i> Ambil Ompreng (Dalam Perjalanan)
                             </button>
                         `;
-                    } else if (statusDriver === "Dalam Penjemputan") {
+                    } 
+                    // Tahap B: Dalam Penjemputan -> Driver Ambil Foto & Konfirmasi Sampai Dapur
+                    else if (statusDriver === "Dalam Penjemputan") {
                         tombolOmprengHTML = `
-                            <button class="btn btn-success btn-action w-100 shadow-sm mt-2" onclick="konfirmasiSampaiDapur('${idDoc}')">
-                                <i class="fa-solid fa-warehouse me-1"></i> Konfirmasi Ompreng Tiba di Dapur Utama
+                            <div class="mt-3">
+                                <label class="form-label small fw-bold text-secondary"><i class="fa-solid fa-camera me-1"></i> Foto Bukti Ompreng Sampai Dapur Utama:</label>
+                                <input type="file" accept="image/*" capture="environment" onchange="prosesGambar(this, '${idDoc}', 'dapur')" class="form-control bg-light">
+                                <div id="container-prev-dapur-${idDoc}" class="preview-container">
+                                    <img id="prev-dapur-${idDoc}" class="preview-img img-fluid">
+                                </div>
+                            </div>
+                            <button class="btn btn-success btn-action w-100 shadow-sm mt-2" id="btn-dapur-${idDoc}" onclick="konfirmasiSampaiDapur('${idDoc}')">
+                                <i class="fa-solid fa-warehouse me-1"></i> Konfirmasi Sampai Dapur Utama
                             </button>
                         `;
-                    } else if (statusDriver === "Sudah Sampai Dapur") {
+                    } 
+                    // Tahap C: Selesai
+                    else if (statusDriver === "Sudah Sampai Dapur") {
                         tombolOmprengHTML = `
                             <div class="alert alert-primary mb-0 border-0 fw-bold text-center py-2 mt-2" style="border-radius: 8px;">
                                 <i class="fa-solid fa-square-check me-1"></i> Ompreng Sukses Dikembalikan ke Dapur
@@ -228,8 +257,8 @@
 
                     bagianOmpreng = `
                         <div class="box-ompreng">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-dark small"><i class="fa-solid fa-boxes-packing text-primary me-1"></i> Status Penjemputan Ompreng</span>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-dark small"><i class="fa-solid fa-boxes-packing text-primary me-1"></i> Status Ompreng</span>
                                 ${badgeSekolahHTML}
                             </div>
                             ${tombolOmprengHTML}
@@ -242,7 +271,7 @@
                         <div class="card card-sekolah p-4">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
-                                    <span class="text-uppercase tracking-wider text-muted small fw-bold d-block mb-1">Tujuan Pengiriman</span>
+                                    <span class="text-uppercase text-muted small fw-bold d-block mb-1">Tujuan Pengiriman</span>
                                     <h4 class="fw-bold text-dark mb-0">${data.nama || "Nama Sekolah"}</h4>
                                 </div>
                                 <span class="badge badge-status ${isPengirimanSelesai ? 'bg-success text-white' : 'bg-warning text-dark'}">
@@ -259,8 +288,8 @@
             });
         });
 
-        // KONTROL FOTO BUKTI
-        prosesGambar = function(input, idDoc) {
+        // FUNGSI KOMPRES & PREVIEW GANDA
+        prosesGambar = function(input, idDoc, tipe) {
             const file = input.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -270,7 +299,6 @@
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-
                         const MAX_WIDTH = 800;
                         let width = img.width;
                         let height = img.height;
@@ -285,10 +313,13 @@
                         ctx.drawImage(img, 0, 0, width, height);
 
                         const dataUrlKompres = canvas.toDataURL('image/jpeg', 0.7);
-                        gambarBase64Temp[idDoc] = dataUrlKompres;
+                        
+                        if(tipe === 'kirim') tempFotoKirim[idDoc] = dataUrlKompres;
+                        if(tipe === 'jemput') tempFotoJemput[idDoc] = dataUrlKompres;
+                        if(tipe === 'dapur') tempFotoDapur[idDoc] = dataUrlKompres;
 
-                        const containerPrev = document.getElementById(`container-prev-${idDoc}`);
-                        const preview = document.getElementById(`prev-${idDoc}`);
+                        const containerPrev = document.getElementById(`container-prev-${tipe}-${idDoc}`);
+                        const preview = document.getElementById(`prev-${tipe}-${idDoc}`);
                         if(preview && containerPrev) {
                             preview.src = dataUrlKompres;
                             containerPrev.style.display = "block";
@@ -299,89 +330,105 @@
             }
         }
 
-        // AKSI 1: KONFIRMASI PENGIRIMAN MAKANAN SAMPAI SEKOLAH
-        updateStatusSampai = function(idDokumen) {
-            if (!gambarBase64Temp[idDokumen]) {
-                alert("Harap lampirkan atau ambil foto bukti serah terima terlebih dahulu!");
+        // AKSI 1: BUKTI PENGIRIMAN MAKANAN
+        updateStatusSampai = async function(idDokumen) {
+            if (!tempFotoKirim[idDokumen]) {
+                alert("Harap ambil foto bukti pengiriman makanan terlebih dahulu!");
                 return;
             }
 
-            if(confirm("Apakah Anda yakin telah sampai di lokasi sekolah ini?")) {
-                const btn = document.getElementById(`btn-${idDokumen}`);
-                const teksAwal = btn.innerHTML;
-                
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses Laporan...';
+            if(confirm("Konfirmasi pengiriman makanan sampai di lokasi?")) {
+                const btn = document.getElementById(`btn-kirim-${idDokumen}`);
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengunggah Foto ke Drive...';
                 btn.classList.add("disabled");
 
-                db.collection("sekolah_list").doc(idDokumen).get().then((docSnap) => {
+                try {
+                    const docSnap = await db.collection("sekolah_list").doc(idDokumen).get();
                     const namaSekolah = docSnap.data().nama || "Sekolah";
-
-                    return fetch(appsScriptUrl, {
-                        method: "POST",
-                        body: JSON.stringify({
-                            divisi: namaSekolah,
-                            image: gambarBase64Temp[idDokumen]
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(resData => {
-                        return resData.status === "success" ? resData.url : "-";
-                    })
-                    .catch(() => {
-                        return "-"; 
-                    });
-                })
-                .then((urlAman) => {
+                    
+                    const urlDrive = await uploadKeDrive(namaSekolah, tempFotoKirim[idDokumen]);
+                    
                     const sekarang = new Date();
-                    const opsiWaktu = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-                    const stringWaktu = sekarang.toLocaleTimeString('id-ID', opsiWaktu) + " WIB";
+                    const stringWaktu = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + " WIB";
 
-                    return db.collection("sekolah_list").doc(idDokumen).update({
+                    await db.collection("sekolah_list").doc(idDokumen).update({
                         status: "Sudah Sampai",
-                        foto_bukti: urlAman,
+                        foto_bukti: urlDrive,
                         waktu_tiba: stringWaktu,
                         ompreng_sekolah: "Belum Ready",
                         ompreng_driver: "Menunggu"
                     });
-                })
-                .then(() => {
-                    alert("Sukses! Laporan pengiriman berhasil dikonfirmasi.");
-                })
-                .catch((err) => {
-                    alert("Gagal memperbarui data: " + err.message);
-                    btn.innerHTML = teksAwal;
+
+                    alert("Pengiriman makanan sukses dikonfirmasi!");
+                } catch(err) {
+                    alert("Gagal memperbarui status: " + err.message);
+                    btn.innerHTML = 'Konfirmasi Makanan Sampai';
                     btn.classList.remove("disabled");
-                });
+                }
             }
         }
 
-        // AKSI 2: JEMPUT OMPRENG KOSONG
-        jemputOmpreng = function(idDokumen) {
-            if(confirm("Apakah Anda sedang dalam perjalanan mengambil ompreng sekolah ini?")) {
-                db.collection("sekolah_list").doc(idDokumen).update({
-                    ompreng_driver: "Dalam Penjemputan"
-                })
-                .then(() => {
-                    alert("Status penjemputan ompreng telah diperbarui ke sistem.");
-                })
-                .catch((err) => {
+        // AKSI 2: BUKTI JEMPUT OMPRENG KOSONG
+        jemputOmpreng = async function(idDokumen) {
+            if (!tempFotoJemput[idDokumen]) {
+                alert("Harap ambil foto ompreng kosong yang dijemput dari sekolah terlebih dahulu!");
+                return;
+            }
+
+            if(confirm("Konfirmasi penjemputan ompreng kosong?")) {
+                const btn = document.getElementById(`btn-jemput-${idDokumen}`);
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengunggah Foto...';
+                btn.classList.add("disabled");
+
+                try {
+                    const docSnap = await db.collection("sekolah_list").doc(idDokumen).get();
+                    const namaSekolah = docSnap.data().nama || "Sekolah";
+
+                    const urlDrive = await uploadKeDrive(namaSekolah + "_JemputOmpreng", tempFotoJemput[idDokumen]);
+
+                    await db.collection("sekolah_list").doc(idDokumen).update({
+                        ompreng_driver: "Dalam Penjemputan",
+                        foto_jemput_ompreng: urlDrive
+                    });
+
+                    alert("Status penjemputan ompreng telah di-update!");
+                } catch(err) {
                     alert("Gagal update data: " + err.message);
-                });
+                    btn.innerHTML = 'Ambil Ompreng (Dalam Perjalanan)';
+                    btn.classList.remove("disabled");
+                }
             }
         }
 
-        // AKSI 3: KONFIRMASI OMPRENG SAMPAI DAPUR UTAMA
-        konfirmasiSampaiDapur = function(idDokumen) {
-            if(confirm("Konfirmasi bahwa ompreng dari sekolah ini sudah dikembalikan dan sampai di Dapur Utama?")) {
-                db.collection("sekolah_list").doc(idDokumen).update({
-                    ompreng_driver: "Sudah Sampai Dapur"
-                })
-                .then(() => {
-                    alert("Ompreng berhasil dikonfirmasi tiba di Dapur Utama!");
-                })
-                .catch((err) => {
+        // AKSI 3: BUKTI OMPRENG SAMPAI DAPUR UTAMA
+        konfirmasiSampaiDapur = async function(idDokumen) {
+            if (!tempFotoDapur[idDokumen]) {
+                alert("Harap ambil foto bukti ompreng telah sampai di Dapur Utama terlebih dahulu!");
+                return;
+            }
+
+            if(confirm("Konfirmasi bahwa ompreng telah diserahkan di Dapur Utama?")) {
+                const btn = document.getElementById(`btn-dapur-${idDokumen}`);
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Mengunggah Foto...';
+                btn.classList.add("disabled");
+
+                try {
+                    const docSnap = await db.collection("sekolah_list").doc(idDokumen).get();
+                    const namaSekolah = docSnap.data().nama || "Sekolah";
+
+                    const urlDrive = await uploadKeDrive(namaSekolah + "_TibaDapur", tempFotoDapur[idDokumen]);
+
+                    await db.collection("sekolah_list").doc(idDokumen).update({
+                        ompreng_driver: "Sudah Sampai Dapur",
+                        foto_tiba_dapur: urlDrive
+                    });
+
+                    alert("Ompreng sukses dikonfirmasi tiba di Dapur Utama!");
+                } catch(err) {
                     alert("Gagal update data: " + err.message);
-                });
+                    btn.innerHTML = 'Konfirmasi Sampai Dapur Utama';
+                    btn.classList.remove("disabled");
+                }
             }
         }
     }
@@ -389,8 +436,6 @@
     document.getElementById('btnLogout').addEventListener('click', function() {
         firebase.auth().signOut().then(() => { 
             window.location.href = "login.html"; 
-        }).catch((error) => {
-            alert("Gagal keluar: " + error.message);
         });
     });
 </script>
